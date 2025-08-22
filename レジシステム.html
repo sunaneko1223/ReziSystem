@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>レジシステム</title>
+<style>
+  /* ====== 共通（各ページの雰囲気を崩さないグローバル） ====== */
+  :root{
+    --bg:#f3f4f6;          /* 背景グレー */
+    --ink:#111827;         /* 文字 */
+    --card:#ffffff;        /* 白カード */
+    --muted:#6b7280;       /* グレー */
+    --blue:#2563eb;        /* 青 */
+    --purple:#6d28d9;      /* 紫 */
+    --red:#ef4444;         /* 赤 */
+    --green:#16a34a;       /* 緑 */
+    --amber:#f59e0b;       /* オレンジ */
+    --soft-shadow:0 4px 12px rgba(0,0,0,.15);
+    --inner-shadow:0 2px 6px rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color:var(--ink);
+  }
+
+  /* ヘッダー（ページごとにボタンはJSで入れ替え） */
+  header{
+    background:#1f2937; color:#fff;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:16px 20px; /* 少し大きめ */
+    position:sticky; top:0; z-index:50;
+  }
+  header h1{ margin:0; font-size:20px; font-weight:600; }
+  .btn{
+    border:none; border-radius:8px; padding:8px 14px; font-size:14px;
+    cursor:pointer; color:#fff; transition:.15s transform;
+  }
+  .btn:active{ transform:scale(.98); }
+  .btn.blue{ background:var(--blue); }
+  .btn.purple{ background:var(--purple); }
+  .btn.red{ background:var(--red); }
+  .btn.gray{ background:var(--muted); color:#fff; }
+
+  /* 大きな白カード（ページ外枠） */
+  .page-card{
+    background:var(--card); border-radius:14px; box-shadow:var(--soft-shadow);
+    padding:22px; margin:20px auto; max-width:1100px;
+  }
+  h2{ margin:0 0 12px; font-size:18px; }
+
+  /* 共通レイアウト（商品/会計） */
+  .row{ display:flex; gap:20px; align-items:flex-start; }
+  .col{ flex:1; min-width:0; }
+  .side{ width:340px; }
+  .inner-card{
+    background:#fff; border-radius:10px; box-shadow:var(--inner-shadow);
+    padding:16px; display:flex; flex-direction:column; height:500px;
+  }
+
+  /* ====== 商品画面 ====== */
+  #page-products .products{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:12px; overflow-y:auto;
+  }
+  #page-products .product{
+    background:#fafafa; border-radius:8px; padding:12px; text-align:center;
+    box-shadow:0 1px 3px rgba(0,0,0,.08); user-select:none;
+  }
+  /* 右：ご注文内容 */
+  #page-products .order-wrap{ display:flex; flex-direction:column; gap:10px; }
+  #page-products .order-list{
+    flex:1; overflow-y:auto; border:1px solid #e5e7eb; border-radius:8px; padding:8px; background:#f8fafc;
+  }
+  .empty-hint{ color:#6b7280; font-size:14px; }
+
+  /* カートの横長カード */
+  .cart-item{
+    background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:10px 10px;
+    margin-bottom:8px; outline:2px solid transparent; transition:.15s;
+  }
+  .cart-item.selected{ outline:2px solid #93c5fd; background:#eff6ff; }
+  .cart-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .cart-name{ font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cart-ops{ display:flex; align-items:center; gap:8px; }
+  .qty-badge{ min-width:36px; text-align:center; padding:4px 6px; border-radius:6px; background:#e5e7eb; font-weight:600; }
+  .btn.icon{ padding:6px 10px; border-radius:6px; font-size:13px; }
+  .btn.icon.gray{ background:#e5e7eb; color:#111; }
+  .btn.icon.red{ background:var(--red); color:#fff; }
+  .cart-sub{ font-size:12px; color:#6b7280; margin-top:4px; }
+  .order-actions{ display:flex; gap:10px; align-items:center; }
+  .total{ font-weight:700; }
+  .btn.long{ width:100%; padding:10px; font-size:16px; border-radius:10px; }
+
+  /* ====== 会計 ====== */
+  #page-pay .info{ font-size:18px; line-height:1.9; }
+  #payDue{ font-size:20px; font-weight:700; }
+  #payChange{ color:#16a34a; font-weight:700; }
+  #page-pay .kbd{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; flex:1; }
+  #page-pay .kbd button{ padding:20px; font-size:20px; border:none; border-radius:8px; background:#f3f4f6; }
+  #page-pay .tools{ margin-top:12px; display:flex; gap:10px; }
+  #page-pay .pay-main{ display:flex; flex-direction:column; height:100%; }
+
+  /* ====== 商品管理 ====== */
+  #page-manage .tools{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+  #page-manage .tools input{ padding:8px; border:1px solid #ddd; border-radius:6px; }
+  #page-manage table{ width:100%; border-collapse:collapse; font-size:14px; background:#fff; }
+  #page-manage th, #page-manage td{ border:1px solid #e5e7eb; padding:8px; text-align:left; }
+  #page-manage th{ background:#f9fafb; }
+  #page-manage .actions button{ margin-right:6px; min-width:70px; }
+
+  /* ====== 取引履歴（2段ツールバー/表示切替/検索/CSV） ====== */
+  #page-history .tools{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+  #page-history select, #page-history input[type="date"], #page-history input[type="text"]{
+    padding:6px; border-radius:6px; border:1px solid #ddd;
+  }
+  #page-history table{ width:100%; border-collapse:collapse; font-size:14px; background:#fff; }
+  #page-history th, #page-history td{ border:1px solid #e5e7eb; padding:8px; text-align:left; }
+  #page-history th{ background:#f9fafb; }
+  #page-history .summary{ margin-top:10px; font-weight:bold; }
+
+  /* ====== カスタムダイアログ ====== */
+  .dialog-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:1000;
+  }
+  .dialog{
+    width:min(92vw, 420px); background:#fff; border-radius:12px; box-shadow:var(--soft-shadow);
+    padding:18px;
+  }
+  .dialog h3{ margin:0 0 6px; font-size:16px; }
+  .dialog p{ margin:0 0 12px; line-height:1.6; }
+  .dialog .actions{ display:flex; justify-content:flex-end; gap:8px; }
+</style>
+</head>
+<body>
+
+<!-- 共有ヘッダー（タイトルは固定、右のボタンはページごとに差し替え） -->
+<header>
+  <h1 id="headTitle">レジ : 商品選択</h1>
+  <div id="headBtns"></div>
+</header>
+
+<!-- ========== 商品画面 ========== -->
+<section id="page-products" class="page-card" aria-label="商品画面">
+  <div class="row">
+    <!-- 左：商品一覧 -->
+    <div class="col inner-card">
+      <h2>商品一覧</h2>
+      <div id="productsGrid" class="products">
+        <!-- 商品カードはJSで生成（初期は空） -->
+      </div>
+    </div>
+
+    <!-- 右：ご注文内容 -->
+    <div class="side inner-card">
+      <h2>ご注文内容</h2>
+      <div id="orderList" class="order-list">
+        <div class="empty-hint">商品が選択されていません。</div>
+      </div>
+      <div class="order-actions" style="margin-top:8px;">
+        <div class="total" id="cartTotal">合計: ¥0</div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button id="btnSelectRemove" class="btn red long">選択して削除</button>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button id="btnGotoPay" class="btn blue long">会計へ進む</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 会計画面 ========== -->
+<section id="page-pay" class="page-card" aria-label="会計" style="display:none;">
+  <div class="row">
+    <!-- 左：金額情報 -->
+    <div class="col inner-card">
+      <h2>お支払い</h2>
+      <div class="info">
+        お支払い金額：<b id="payDue">¥0</b><br>
+        お預かり金額：<b id="payTender">¥0</b><br>
+        おつり：<b id="payChange">¥0</b>
+      </div>
+    </div>
+
+    <!-- 右：テンキー＋会計 -->
+    <div class="side inner-card pay-main">
+      <h2>金額入力</h2>
+      <div class="kbd" id="keypad">
+        <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+        <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+        <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+        <button style="grid-column:span 3;" data-k="0">0</button>
+        <button style="grid-column:span 3;" data-k="C">C</button>
+      </div>
+      <div class="tools">
+        <button id="btnDoPay" class="btn blue long">会計</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 商品管理 ========== -->
+<section id="page-manage" class="page-card" aria-label="商品管理" style="display:none; max-width:900px;">
+  <h2>商品管理</h2>
+  <div class="tools">
+    <input type="text" id="newProductName" placeholder="商品名">
+    <input type="number" id="newProductPrice" placeholder="価格">
+    <button class="btn purple" id="btnAddProduct">追加</button>
+    <button class="btn gray" id="btnResetProducts">初期商品に戻す</button>
+  </div>
+
+  <table id="manageTable">
+    <thead>
+      <tr><th>ID</th><th>商品名</th><th>価格</th><th>操作</th></tr>
+    </thead>
+    <tbody><!-- JS --></tbody>
+  </table>
+</section>
+
+<!-- ========== 取引履歴 ========== -->
+<section id="page-history" class="page-card" aria-label="取引履歴" style="display:none; max-width:1000px;">
+  <h2>取引履歴</h2>
+
+  <!-- ツールバー1 -->
+  <div class="tools">
+    <select id="dateFilter">
+      <option value="all">すべて</option>
+      <option value="today">今日のみ</option>
+      <option value="custom">日付指定</option>
+    </select>
+    <input type="date" id="customDate" style="display:none;">
+    <input type="text" id="searchBox" placeholder="検索ワード">
+    <button class="btn blue" id="searchBtn">検索</button>
+    <button class="btn gray" id="clearBtn">クリア</button>
+  </div>
+
+  <!-- ツールバー2 -->
+  <div class="tools">
+    <select id="viewMode">
+      <option value="transaction">取引</option>
+      <option value="date">日付</option>
+      <option value="product">商品</option>
+    </select>
+    <button class="btn" style="background:var(--amber);" id="csvBtn">CSVダウンロード</button>
+    <button class="btn red" id="selDelBtn">選択削除</button>
+    <button class="btn gray" id="allClearBtn">全削除</button>
+  </div>
+
+  <table id="historyTable">
+    <thead><!-- JS --></thead>
+    <tbody><!-- JS --></tbody>
+  </table>
+
+  <div class="summary" id="historySummary">売上合計: ¥0（0件）</div>
+</section>
+
+<!-- ========== カスタムダイアログ ========== -->
+<div id="dlg" class="dialog-backdrop" role="dialog" aria-modal="true">
+  <div class="dialog">
+    <h3 id="dlgTitle">確認</h3>
+    <p id="dlgMsg">メッセージ</p>
+    <div class="actions">
+      <button class="btn gray" id="dlgCancel">キャンセル</button>
+      <button class="btn blue" id="dlgOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========= ユーティリティ ========= */
+const el = id => document.getElementById(id);
+const fmt = n => "¥" + (n||0).toLocaleString();
+
+/* --- カスタムダイアログ --- */
+function dialog(msg, {title="確認", okText="OK", cancelText="キャンセル", cancel=true}={}){
+  el("dlgTitle").textContent = title;
+  el("dlgMsg").textContent = msg;
+  const dlg = el("dlg");
+  const okBtn = el("dlgOk");
+  const cancelBtn = el("dlgCancel");
+  okBtn.textContent = okText;
+  cancelBtn.textContent = cancelText;
+  cancelBtn.style.display = cancel ? "" : "none";
+  dlg.style.display = "flex";
+  return new Promise(res=>{
+    const close = v=>{
+      dlg.style.display = "none";
+      okBtn.onclick = cancelBtn.onclick = null;
+      res(v);
+    };
+    okBtn.onclick = ()=>close(true);
+    cancelBtn.onclick = ()=>close(false);
+    dlg.onclick = e=>{ if(e.target===dlg) close(false); };
+  });
+}
+
+/* ========= データ永続化 ========= */
+const LS_PRODUCTS = "regi_products";
+const LS_CART     = "regi_cart";
+const LS_TXNS     = "regi_transactions";
+
+let products = JSON.parse(localStorage.getItem(LS_PRODUCTS) || "[]"); // 初期空
+let cart = JSON.parse(localStorage.getItem(LS_CART) || "{}");
+let transactions = JSON.parse(localStorage.getItem(LS_TXNS) || "[]");
+
+/* 保存 */
+function saveAll(){
+  localStorage.setItem(LS_PRODUCTS, JSON.stringify(products));
+  localStorage.setItem(LS_CART, JSON.stringify(cart));
+  localStorage.setItem(LS_TXNS, JSON.stringify(transactions));
+}
+
+/* ========= 画面切替 & ヘッダー右ボタン ========= */
+const PAGES = ["products","pay","manage","history"];
+function showPage(name){
+  PAGES.forEach(p=>{
+    el("page-"+p).style.display = (p===name) ? "" : "none";
+  });
+  // ヘッダー
+  const hb = el("headBtns");
+  hb.innerHTML = "";
+  if(name==="products"){
+    el("headTitle").textContent = "レジ : 商品選択";
+    hb.append(btn("商品管理","purple",()=>showPage("manage")));
+    hb.append(btn("取引履歴","blue",()=>{ refreshHistory(); showPage("history"); }));
+  }else if(name==="pay"){
+    el("headTitle").textContent = "レジ : 会計";
+    hb.append(btn("商品管理","purple",()=>showPage("manage")));
+    hb.append(btn("取引履歴","blue",()=>{ refreshHistory(); showPage("history"); }));
+  }else if(name==="manage"){
+    el("headTitle").textContent = "レジ : 商品管理";
+    hb.append(btn("戻る","red",()=>showPage("products")));
+    hb.append(btn("取引履歴","blue",()=>{ refreshHistory(); showPage("history"); }));
+  }else if(name==="history"){
+    el("headTitle").textContent = "レジ : 取引履歴";
+    hb.append(btn("商品管理","purple",()=>showPage("manage")));
+    hb.append(btn("戻る","red",()=>showPage("products")));
+  }
+}
+function btn(label, cls, on){
+  const b = document.createElement("button");
+  b.className = "btn "+cls;
+  b.textContent = label;
+  b.onclick = on;
+  return b;
+}
+
+/* ========= 商品画面 ========= */
+function renderProducts(){
+  const wrap = el("productsGrid");
+  wrap.innerHTML = "";
+  if(products.length===0){
+    const hint = document.createElement("div");
+    hint.className="empty-hint";
+    hint.style.gridColumn="1 / -1";
+    hint.textContent = "商品管理から商品を追加してください。";
+    wrap.append(hint);
+    return;
+  }
+  products.forEach(p=>{
+    const card = document.createElement("div");
+    card.className="product";
+    card.innerHTML = `${esc(p.name)}<br>¥${Number(p.price).toLocaleString()}`;
+    card.onclick = ()=>addToCart(p.id,1);
+    wrap.append(card);
+  });
+}
+function esc(s){ return (s+"").replace(/[&<>"']/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m])); }
+
+function addToCart(pid, qty){
+  const p = products.find(x=>x.id===pid);
+  if(!p) return;
+  if(!cart[pid]) cart[pid]={ id:pid, name:p.name, price:Number(p.price), qty:0, selected:false };
+  cart[pid].qty += qty;
+  saveAll(); renderCart();
+}
+function renderCart(){
+  const list = el("orderList");
+  list.innerHTML = "";
+  const ids = Object.keys(cart);
+  if(ids.length===0){
+    list.innerHTML = '<div class="empty-hint">商品が選択されていません。</div>';
+    el("cartTotal").textContent = "合計: ¥0";
+    return;
+  }
+  let total = 0;
+  ids.forEach(id=>{
+    const c = cart[id];
+    const sub = c.price * c.qty;
+    total += sub;
+
+    const item = document.createElement("div");
+    item.className = "cart-item"+(c.selected?" selected":"");
+    item.onclick = (e)=>{ if(e.target.closest(".cart-ops")) return; c.selected=!c.selected; saveAll(); renderCart(); };
+
+    const top = document.createElement("div");
+    top.className="cart-top";
+    const name = document.createElement("div");
+    name.className="cart-name";
+    name.textContent = c.name;
+
+    const ops = document.createElement("div");
+    ops.className="cart-ops";
+    const minus = document.createElement("button");
+    minus.className="btn icon gray";
+    minus.textContent = "−";
+    minus.onclick = (e)=>{ e.stopPropagation(); c.qty=Math.max(1,c.qty-1); saveAll(); renderCart(); };
+    const qty = document.createElement("span");
+    qty.className="qty-badge"; qty.textContent = c.qty;
+    const plus = document.createElement("button");
+    plus.className="btn icon gray";
+    plus.textContent = "+";
+    plus.onclick = (e)=>{ e.stopPropagation(); c.qty++; saveAll(); renderCart(); };
+    const del = document.createElement("button");
+    del.className="btn icon red";
+    del.textContent = "×";
+    del.onclick = (e)=>{ e.stopPropagation(); delete cart[id]; saveAll(); renderCart(); };
+    ops.append(minus, qty, plus, del);
+
+    top.append(name, ops);
+    const subl = document.createElement("div");
+    subl.className="cart-sub";
+    subl.textContent = `¥${c.price.toLocaleString()} × ${c.qty} = ¥${sub.toLocaleString()}`;
+
+    item.append(top, subl);
+    list.append(item);
+  });
+  el("cartTotal").textContent = "合計: "+fmt(total);
+}
+el("btnSelectRemove").onclick = async ()=>{
+  const someSel = Object.values(cart).some(c=>c.selected);
+  if(!someSel){ await dialog("削除する商品を選択してください。",{title:"ご案内",cancel:false,okText:"OK"}); return; }
+  const ok = await dialog("選択した商品を削除します。よろしいですか？",{title:"確認"});
+  if(!ok) return;
+  Object.keys(cart).forEach(id=>{ if(cart[id].selected) delete cart[id]; });
+  saveAll(); renderCart();
+};
+el("btnGotoPay").onclick = async ()=>{
+  if(Object.keys(cart).length===0){
+    await dialog("商品が選択されていません。",{title:"ご案内",cancel:false});
+    return;
+  }
+  // 会計に必要な合計を計算して渡す
+  const total = Object.values(cart).reduce((s,c)=>s+c.price*c.qty,0);
+  sessionStorage.setItem("regi_due", String(total));
+  showPage("pay");
+  // 会計画面の表示更新
+  el("payDue").textContent = fmt(total);
+  tenderAmount = 0; updatePayView();
+};
+
+/* ========= 会計 ========= */
+let tenderAmount = 0;
+function updatePayView(){
+  el("payTender").textContent = fmt(tenderAmount);
+  const due = Number(sessionStorage.getItem("regi_due")||"0");
+  const change = Math.max(0, tenderAmount - due);
+  el("payChange").textContent = fmt(change);
+}
+el("keypad").addEventListener("click",(e)=>{
+  const k = e.target.getAttribute?.("data-k");
+  if(!k) return;
+  if(k==="C"){ tenderAmount=0; updatePayView(); return; }
+  tenderAmount = Number(String(tenderAmount)+k);
+  updatePayView();
+});
+el("btnDoPay").onclick = async ()=>{
+  const due = Number(sessionStorage.getItem("regi_due")||"0");
+  if(Object.keys(cart).length===0){
+    await dialog("商品が選択されていません。",{title:"ご案内",cancel:false});
+    return;
+  }
+  if(tenderAmount<=0){
+    await dialog("お預かり金額を入力してください。",{title:"ご案内",cancel:false});
+    return;
+  }
+  if(tenderAmount < due){
+    await dialog("お預かり金額が不足しています。",{title:"ご案内",cancel:false});
+    return;
+  }
+  const ok = await dialog("この内容で会計を確定します。よろしいですか？",{title:"確認"});
+  if(!ok) return;
+
+  // 取引作成
+  const items = Object.values(cart).map(c=>({id:c.id,name:c.name,price:c.price,qty:c.qty, subtotal:c.price*c.qty}));
+  const total = items.reduce((s,i)=>s+i.subtotal,0);
+  const txn = {
+    id: Date.now(),
+    ts: new Date().toISOString(),
+    items, total,
+    tender: tenderAmount,
+    change: tenderAmount-total
+  };
+  transactions.push(txn);
+  cart = {}; tenderAmount=0; saveAll();
+  updatePayView(); renderCart(); renderProducts();
+
+  await dialog("会計を保存しました。",{title:"完了",cancel:false,okText:"OK"});
+  showPage("products");
+};
+
+/* ========= 商品管理 ========= */
+function nextProductId(){
+  return products.length? Math.max(...products.map(p=>p.id))+1 : 1;
+}
+function renderManage(){
+  const tbody = el("manageTable").querySelector("tbody");
+  tbody.innerHTML = "";
+  products.forEach(p=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${p.id}</td>
+      <td>${esc(p.name)}</td>
+      <td>¥${Number(p.price).toLocaleString()}</td>
+      <td class="actions">
+        <button class="btn blue" data-act="edit" data-id="${p.id}" style="min-width:70px;">編集</button>
+        <button class="btn red" data-act="del" data-id="${p.id}" style="min-width:70px;">削除</button>
+      </td>`;
+    tbody.append(tr);
+  });
+}
+el("btnAddProduct").onclick = async ()=>{
+  const name = el("newProductName").value.trim();
+  const price = Number(el("newProductPrice").value);
+  if(!name || !(price>0)){
+    await dialog("商品名と価格を正しく入力してください。",{title:"ご案内",cancel:false}); return;
+  }
+  products.push({id:nextProductId(), name, price});
+  el("newProductName").value=""; el("newProductPrice").value="";
+  saveAll(); renderManage(); renderProducts();
+};
+el("btnResetProducts").onclick = async ()=>{
+  const ok = await dialog("初期商品に戻します。現在の商品はすべて消えます。",{title:"確認"});
+  if(!ok) return;
+  // 初期は空にする仕様
+  products = [];
+  cart = {};
+  saveAll(); renderManage(); renderProducts(); renderCart();
+};
+el("manageTable").addEventListener("click", async (e)=>{
+  const b = e.target.closest("button");
+  if(!b) return;
+  const id = Number(b.dataset.id);
+  const p = products.find(x=>x.id===id);
+  if(!p) return;
+
+  if(b.dataset.act==="del"){
+    const ok = await dialog(`「${p.name}」を削除します。よろしいですか？`,{title:"確認"});
+    if(!ok) return;
+    products = products.filter(x=>x.id!==id);
+    // カートに残っていたら消す
+    if(cart[id]) delete cart[id];
+    saveAll(); renderManage(); renderProducts(); renderCart();
+  }else if(b.dataset.act==="edit"){
+    // 簡易編集（ダイアログ２段）
+    const ok1 = await dialog("商品名を変更しますか？",{title:"編集"});
+    if(ok1){
+      const nv = prompt("新しい商品名", p.name);
+      if(nv!==null && nv.trim()){
+        p.name = nv.trim();
+      }
+    }
+    const ok2 = await dialog("価格を変更しますか？",{title:"編集"});
+    if(ok2){
+      const pv = prompt("新しい価格（数値）", String(p.price));
+      const np = Number(pv);
+      if(np>0) p.price=np;
+    }
+    saveAll(); renderManage(); renderProducts(); renderCart();
+  }
+});
+
+/* ========= 取引履歴 ========= */
+function refreshHistory(){
+  const mode = el("viewMode").value;
+  buildHistoryTable(mode);
+  updateSummary();
+  applyFilters(); // 日付/検索フィルタ
+}
+function buildHistoryTable(mode){
+  const thead = el("historyTable").querySelector("thead");
+  const tbody = el("historyTable").querySelector("tbody");
+  thead.innerHTML = ""; tbody.innerHTML = "";
+
+  if(mode==="transaction"){
+    thead.innerHTML = `
+      <tr>
+        <th style="width:40px"></th>
+        <th>日時</th><th>内容</th><th>合計</th><th>預り</th><th>お釣り</th>
+      </tr>`;
+    transactions.slice().reverse().forEach(tx=>{
+      const row = document.createElement("tr");
+      const content = tx.items.map(i=>`${i.name}x${i.qty}`).join(", ");
+      row.innerHTML = `
+        <td><input type="checkbox" data-id="${tx.id}"></td>
+        <td>${fmtDate(tx.ts)}</td>
+        <td>${esc(content)}</td>
+        <td>${fmt(tx.total)}</td>
+        <td>${fmt(tx.tender)}</td>
+        <td>${fmt(tx.change)}</td>`;
+      tbody.append(row);
+    });
+  }else if(mode==="date"){
+    thead.innerHTML = `<tr><th>日付</th><th>商品</th><th>合計</th><th>お釣り</th></tr>`;
+    // 日付順（当日→過去）
+    const map = {};
+    transactions.forEach(tx=>{
+      const d = fmtDate(tx.ts).slice(0,10);
+      if(!map[d]) map[d]={ total:0, change:0, items:[] };
+      map[d].total += tx.total; map[d].change += tx.change;
+      map[d].items.push(...tx.items);
+    });
+    Object.entries(map).sort((a,b)=> a[0]<b[0]?1:-1).forEach(([d, v])=>{
+      const row = document.createElement("tr");
+      row.innerHTML = `<td>${d}</td><td>${v.items.length}件</td><td>${fmt(v.total)}</td><td>${fmt(v.change)}</td>`;
+      tbody.append(row);
+    });
+  }else{ // product
+    thead.innerHTML = `<tr><th>商品名</th><th>販売個数</th><th>売上金額</th></tr>`;
+    const pm = {};
+    transactions.forEach(tx=>{
+      tx.items.forEach(i=>{
+        if(!pm[i.name]) pm[i.name]={qty:0, sales:0};
+        pm[i.name].qty += i.qty;
+        pm[i.name].sales += i.subtotal;
+      });
+    });
+    Object.entries(pm).sort((a,b)=> b[1].sales - a[1].sales).forEach(([name, v])=>{
+      const row = document.createElement("tr");
+      row.innerHTML = `<td>${esc(name)}</td><td>${v.qty}</td><td>${fmt(v.sales)}</td>`;
+      tbody.append(row);
+    });
+  }
+}
+function fmtDate(iso){
+  const d = new Date(iso);
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), da=String(d.getDate()).padStart(2,"0");
+  const hh=String(d.getHours()).padStart(2,"0"), mm=String(d.getMinutes()).padStart(2,"0");
+  return `${y}/${m}/${da} ${hh}:${mm}`;
+}
+function updateSummary(){
+  const count = transactions.length;
+  const sales = transactions.reduce((s,tx)=>s+tx.total,0);
+  el("historySummary").textContent = `売上合計: ${fmt(sales)}（${count}件）`;
+}
+function applyFilters(){
+  const dateFilter = el("dateFilter").value;
+  const custom = el("customDate").value; // yyyy-mm-dd
+  const word = el("searchBox").value.trim();
+
+  // transactionモードのときだけ行単位フィルタ（テーブル再構成済み）
+  if(el("viewMode").value!=="transaction") return;
+
+  const rows = el("historyTable").querySelectorAll("tbody tr");
+  rows.forEach(r=>{
+    const tds = r.querySelectorAll("td");
+    const ts = tds[1].textContent;   // 日時
+    const content = tds[2].textContent; // 内容
+    let ok = true;
+
+    // 日付
+    if(dateFilter==="today"){
+      const today = new Date();
+      const ds = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,"0")}/${String(today.getDate()).padStart(2,"0")}`;
+      ok = ok && ts.startsWith(ds);
+    }else if(dateFilter==="custom" && custom){
+      const ds = custom.replace(/-/g,"/");
+      ok = ok && ts.startsWith(ds);
+    }
+    // 検索
+    if(word){
+      ok = ok && (content.includes(word) || tds[3].textContent.includes(word));
+    }
+    r.style.display = ok ? "" : "none";
+  });
+}
+
+/* ボタン類（履歴） */
+el("viewMode").addEventListener("change", refreshHistory);
+el("dateFilter").addEventListener("change", ()=>{
+  el("customDate").style.display = el("dateFilter").value==="custom" ? "inline-block" : "none";
+  refreshHistory();
+});
+el("customDate").addEventListener("input", refreshHistory);
+el("searchBtn").addEventListener("click", applyFilters);
+el("clearBtn").addEventListener("click", ()=>{
+  el("searchBox").value=""; el("dateFilter").value="all"; el("customDate").value=""; el("customDate").style.display="none";
+  refreshHistory();
+});
+el("csvBtn").addEventListener("click", ()=>{
+  const rows = [["日時","内容","合計","預り","お釣り"]];
+  transactions.forEach(tx=>{
+    const content = tx.items.map(i=>`${i.name}x${i.qty}`).join(", ");
+    rows.push([fmtDate(tx.ts), content, tx.total, tx.tender, tx.change]);
+  });
+  const csv = rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "transactions.csv"; a.click();
+  URL.revokeObjectURL(a.href);
+});
+el("selDelBtn").addEventListener("click", async ()=>{
+  // transaction表示時にチェック削除
+  if(el("viewMode").value!=="transaction"){ await dialog("取引モードでのみ削除できます。",{title:"ご案内",cancel:false}); return; }
+  const ids = [...el("historyTable").querySelectorAll('tbody input[type="checkbox"]:checked')].map(c=>Number(c.dataset.id));
+  if(ids.length===0){ await dialog("削除する行を選択してください。",{title:"ご案内",cancel:false}); return; }
+  const ok = await dialog(`${ids.length}件を削除します。よろしいですか？`,{title:"確認"});
+  if(!ok) return;
+  transactions = transactions.filter(tx=>!ids.includes(tx.id));
+  saveAll(); refreshHistory();
+});
+el("allClearBtn").addEventListener("click", async ()=>{
+  const ok = await dialog("取引履歴をすべて削除します。よろしいですか？",{title:"確認"});
+  if(!ok) return;
+  transactions = []; saveAll(); refreshHistory();
+});
+
+/* ========= 初期描画 ========= */
+function init(){
+  renderProducts();
+  renderCart();
+  renderManage();
+  refreshHistory();
+  showPage("products");
+}
+init();
+</script>
+</body>
+</html>
