@@ -743,6 +743,10 @@ el("allClearBtn").addEventListener("click", async ()=>{
   transactions = []; saveAll(); refreshHistory();
 });
 
+  document.addEventListener("dblclick", function(e){
+    e.preventDefault();
+  }, { passive:false });
+  
 /* ========= 初期描画 ========= */
 function init(){
   renderProducts();
