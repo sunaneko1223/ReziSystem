@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>レジシステムv2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+      position: fixed;
+      overflow: hidden;
+    }
+    body {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="h-full bg-gray-100">
+
+  <!-- 全体コンテナ -->
+  <div class="w-full h-full max-w-4xl mx-auto bg-white shadow-2xl rounded-lg flex flex-col min-h-0">
+
+    <!-- === レジ1: 商品選択画面 === -->
+<div id="screen1" class="w-full flex-grow flex flex-col min-h-0">
+
+  <!-- ==== ヘッダー ==== -->
+  <header class="bg-gray-800 text-white p-4 flex justify-between items-center flex-shrink-0">
+    <h1 class="text-xl font-bold">レジ：商品選択</h1>
+    <div>
+      <!-- 商品管理ボタン -->
+      <button id="to-screen4-button"
+              class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition mr-2">
+        商品管理
+      </button>
+      <!-- 取引履歴ボタン -->
+      <button id="to-screen5-button"
+              class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition">
+        取引履歴
+      </button>
+    </div>
+  </header>
+
+  <!-- ==== メインコンテンツ ==== -->
+  <main class="flex-grow p-4 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0 content-stretch">
+
+    <!-- === 左：商品リスト === -->
+    <div id="product-list"
+         class="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-0 p-1
+                bg-gray-50 rounded-lg overflow-auto no-scrollbar min-h-0">
+      <!-- 商品はスクリプトで生成 -->
+    </div>
+
+    <!-- === 右：ご注文内容 === -->
+    <div class="md:col-span-1 bg-gray-100 p-4 rounded-lg flex flex-col min-h-0">
+
+      <!-- 見出し -->
+      <h2 class="text-lg font-bold border-b pb-2 mb-4 flex-shrink-0">ご注文内容</h2>
+
+      <!-- ご注文リスト（スクロール可） -->
+      <div id="cart-items"
+           class="flex-grow overflow-y-auto no-scrollbar space-y-2 min-h-0 allow-scroll"
+           style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
+        <p class="text-gray-500">商品が選択されていません。</p>
+      </div>
+
+      <!-- 下部操作パネル（固定） -->
+      <div class="mt-3 flex-shrink-0">
+        <div class="space-y-2">
+          <!-- 無料券 -->
+          <div class="flex items-center justify-between w-full bg-orange-500 text-white font-bold py-1 rounded-lg">
+            <button id="decrease-coupon-btn"
+                    class="text-2xl px-4 py-1 rounded-l-lg hover:bg-orange-600 transition">-</button>
+            <span class="flex-grow text-center">無料券 <span id="coupon-count">0</span>枚</span>
+            <button id="increase-coupon-btn"
+                    class="text-2xl px-4 py-1 rounded-r-lg hover:bg-orange-600 transition">+</button>
+          </div>
+
+          <!-- 削除ボタン -->
+          <button id="remove-selected-btn"
+                  class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-lg transition disabled:bg-gray-400"
+                  disabled>削除</button>
+
+          <!-- 合計・会計へ進む -->
+          <div class="border-t pt-4">
+            <!-- 割引行 -->
+            <div id="discount-row"
+                 class="flex justify-between items-center text-lg text-red-500 hidden">
+              <span>割引 (無料券)</span>
+              <span id="discount-amount">¥0</span>
+            </div>
+
+            <!-- 合計金額 -->
+            <div class="flex justify-between items-center text-2xl font-bold">
+              <span>合計</span>
+              <span id="total-amount-display">¥0</span>
+            </div>
+
+            <!-- 会計へ進むボタン -->
+            <button id="checkout-button"
+                    class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg mt-4 transition">
+              会計へ進む
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- === 選択状態のカスタムCSS === -->
+<style>
+  .cart-item.selected {
+    border: 2px solid #3b82f6;   /* 青い枠 */
+    background-color: #ebf5ff;   /* 薄い青 */
+  }
+</style>
+
+<!-- === レジ1専用スクリプト === -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  let cart = [];
+  let subtotal = 0, discountAmount = 0, couponCount = 0;
+  let selectedProductId = null;
+
+  // === 商品データを取得 ===
+  function loadProducts() {
+    const defaultProducts = [
+      { id: 1, name: "ポテト", flavor: "塩", price: 300 },
+      { id: 2, name: "ポテト", flavor: "コンソメ", price: 300 },
+      { id: 3, name: "ポテト", flavor: "バター醤油", price: 300 },
+      { id: 4, name: "たこ焼き", flavor: "ソース", price: 250 },
+      { id: 5, name: "たこ焼き", flavor: "しょうゆ", price: 250 },
+      { id: 6, name: "たこ焼き", flavor: "塩", price: 250 },
+      { id: 7, name: "ドリンク", flavor: "コーラ", price: 200 },
+      { id: 8, name: "ドリンク", flavor: "カルピス", price: 200 },
+      { id: 9, name: "ドリンク", flavor: "サイダー", price: 200 }
+    ];
+    const stored = localStorage.getItem("products");
+    return stored ? JSON.parse(stored) : defaultProducts;
+  }
+
+  // DOM取得
+  const productListContainer = document.getElementById("product-list");
+  const cartItemsContainer = document.getElementById("cart-items");
+  const totalAmountDisplay = document.getElementById("total-amount-display");
+  const couponCountDisplay = document.getElementById("coupon-count");
+  const discountRow = document.getElementById("discount-row");
+  const discountAmountDisplay = document.getElementById("discount-amount");
+  const removeSelectedBtn = document.getElementById("remove-selected-btn");
+
+  const formatCurrency = (v) => `¥${v.toLocaleString()}`;
+
+  // === 商品リスト生成 ===
+  function renderProducts() {
+    productListContainer.innerHTML = "";
+    const products = loadProducts();
+
+    products.forEach(p => {
+      const btn = document.createElement("div");
+      btn.className = "bg-white p-3 rounded-lg shadow-md cursor-pointer hover:shadow-lg hover:bg-blue-50 transition-all duration-200 flex flex-col items-center justify-center text-center h-28";
+      btn.innerHTML = `
+        <div class="font-semibold text-base">${p.name}</div>
+        <div class="text-sm text-gray-600">${p.flavor || ""}</div>
+        <div class="text-gray-600 mt-2">${formatCurrency(p.price)}</div>
+      `;
+      btn.addEventListener("click", () => addProductToCart(p.id));
+      productListContainer.appendChild(btn);
+    });
+  }
+
+  // === カート更新 ===
+  function updateCartView() {
+    cartItemsContainer.innerHTML = "";
+    subtotal = 0;
+    discountAmount = 0;
+
+    if (cart.length === 0) {
+      cartItemsContainer.innerHTML = '<p class="text-gray-500">商品が選択されていません。</p>';
+      totalAmountDisplay.textContent = "¥0";
+      discountRow.classList.add("hidden");
+      removeSelectedBtn.disabled = true;
+      couponCount = 0;
+      couponCountDisplay.textContent = couponCount;
+      return;
+    }
+
+    const products = loadProducts();
+
+    cart.forEach(item => {
+      const product = products.find(p => p.id === item.id);
+      if (!product) return;
+      subtotal += product.price * item.quantity;
+      discountAmount += product.price * (item.freeCount || 0);
+
+      const totalPrice = product.price * item.quantity;
+
+      const row = document.createElement("div");
+      row.className = `cart-item bg-white p-3 rounded-lg ${item.id === selectedProductId ? "selected" : ""}`;
+      row.innerHTML = `
+        <div class="flex justify-between items-center">
+          <div class="font-medium">${product.name}</div>
+          <div class="text-2xl font-bold text-gray-800">${formatCurrency(totalPrice)}</div>
+        </div>
+        <div class="text-sm text-gray-500 mt-1">${product.flavor || ""}</div>
+        <div class="flex justify-between items-center mt-2">
+          <span class="text-sm">
+            ${item.quantity}点 │ <span class="text-red-500">${item.freeCount || 0}枚</span>
+          </span>
+          <div class="flex gap-2">
+            <button class="minus bg-gray-300 px-3 py-1 rounded">－</button>
+            <button class="plus bg-gray-300 px-3 py-1 rounded">＋</button>
+            <button class="remove bg-red-500 text-white px-3 py-1 rounded">×</button>
+          </div>
+        </div>
+      `;
+
+      // 数量減少
+      row.querySelector(".minus").addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (item.quantity > 1) item.quantity--;
+        else cart = cart.filter(c => c.id !== item.id);
+        if (item.freeCount > item.quantity) {
+          couponCount -= (item.freeCount - item.quantity);
+          item.freeCount = item.quantity;
+        }
+        updateCartView();
+      });
+
+      // 数量増加
+      row.querySelector(".plus").addEventListener("click", (e) => {
+        e.stopPropagation();
+        item.quantity++;
+        updateCartView();
+      });
+
+      // 削除
+      row.querySelector(".remove").addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (item.freeCount) couponCount -= item.freeCount;
+        cart = cart.filter(c => c.id !== item.id);
+        if (selectedProductId === item.id) selectedProductId = null;
+        updateCartView();
+      });
+
+      // 選択切替
+      row.addEventListener("click", () => {
+        selectedProductId = item.id === selectedProductId ? null : item.id;
+        updateCartView();
+      });
+
+      cartItemsContainer.appendChild(row);
+    });
+
+    // 割引行表示
+    if (discountAmount > 0) {
+      discountAmountDisplay.textContent = `-${formatCurrency(discountAmount)}`;
+      discountRow.classList.remove("hidden");
+    } else {
+      discountRow.classList.add("hidden");
+    }
+
+    totalAmountDisplay.textContent = formatCurrency(subtotal - discountAmount);
+    couponCountDisplay.textContent = couponCount;
+    removeSelectedBtn.disabled = (selectedProductId === null);
+  }
+
+  // === カートに商品追加 ===
+  function addProductToCart(id) {
+    const found = cart.find(c => c.id === id);
+    if (found) found.quantity++;
+    else cart.push({ id: id, quantity: 1, freeCount: 0 });
+    selectedProductId = id;
+    updateCartView();
+  }
+
+  // === 選択削除 ===
+  removeSelectedBtn.addEventListener("click", () => {
+    if (selectedProductId === null) return;
+    const item = cart.find(c => c.id === selectedProductId);
+    if (item && item.freeCount) couponCount -= item.freeCount;
+    cart = cart.filter(c => c.id !== selectedProductId);
+    selectedProductId = null;
+    updateCartView();
+  });
+
+  // === 無料券操作 ===
+  document.getElementById("increase-coupon-btn").addEventListener("click", () => {
+    if (!selectedProductId) return;
+    const item = cart.find(c => c.id === selectedProductId);
+    if (item && item.freeCount < item.quantity) {
+      item.freeCount++;
+      couponCount++;
+      updateCartView();
+    }
+  });
+  document.getElementById("decrease-coupon-btn").addEventListener("click", () => {
+    if (!selectedProductId) return;
+    const item = cart.find(c => c.id === selectedProductId);
+    if (item && item.freeCount > 0) {
+      item.freeCount--;
+      couponCount--;
+      updateCartView();
+    }
+  });
+
+  // === 会計へ進む ===
+  document.getElementById("checkout-button").addEventListener("click", () => {
+    const products = loadProducts();
+    const data = {
+      cart: cart.map(item => {
+        const product = products.find(p => p.id === item.id);
+        return {
+          id: item.id,
+          name: product.name,
+          flavor: product.flavor,
+          price: product.price,
+          quantity: item.quantity,
+          freeCount: item.freeCount
+        };
+      }),
+      couponCount,
+      subtotal,
+      discountAmount,
+      total: subtotal - discountAmount
+    };
+
+    localStorage.setItem("currentTransaction", JSON.stringify(data));
+    showScreen("screen2");
+  });
+
+  // === 商品管理からの更新を受け取る ===
+  window.addEventListener("productsUpdated", () => {
+    renderProducts();
+    updateCartView();
+  });
+
+  // 初期化
+  renderProducts();
+  updateCartView();
+
+  // === 商品管理・取引履歴ボタン ===
+  document.getElementById("to-screen4-button").addEventListener("click", () => {
+    showScreen("screen4");
+  });
+  document.getElementById("to-screen5-button").addEventListener("click", () => {
+    showScreen("screen5");
+  });
+});
+</script>
+    
+    <!-- === レジ2: お支払い画面 === -->
+<div id="screen2" class="w-full hidden flex-grow flex flex-col">
+
+  <!-- ==== ヘッダー ==== -->
+  <header class="bg-gray-800 text-white p-4 flex justify-between items-center flex-shrink-0">
+    <h1 class="text-xl font-bold">レジ：お支払い</h1>
+    <button id="back-to-screen1-button"
+            class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition">
+      戻る
+    </button>
+  </header>
+
+  <!-- ==== メイン ==== -->
+  <main class="flex-grow p-4 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+
+    <!-- 左側：金額表示 -->
+    <div class="space-y-6 bg-gray-50 p-6 rounded-lg">
+      <div>
+        <label class="text-lg text-gray-600">お支払い金額</label>
+        <p id="payment-due"
+           class="text-4xl font-bold text-gray-800 border-b-2 pb-2">¥0</p>
+      </div>
+      <div>
+        <label class="text-lg text-gray-600">お預かり金額</label>
+        <p id="amount-tendered-display"
+           class="text-4xl font-bold text-blue-600 border-b-2 pb-2">¥0</p>
+      </div>
+      <div>
+        <label class="text-lg text-gray-600">おつり</label>
+        <p id="change-due-display"
+           class="text-4xl font-bold text-green-600">¥0</p>
+      </div>
+    </div>
+
+    <!-- 右側：テンキー -->
+    <div class="flex flex-col items-center justify-center">
+      <div class="grid grid-cols-3 gap-2 w-full max-w-xs">
+        <button class="keypad-btn text-2xl p-6 bg-gray-200 hover:bg-gray-300 rounded-lg">7</button>
+        <button class="keypad-btn text-2xl p-6 bg-gray-200 hover:bg-gray-300 rounded-lg">8</button>
+        <button class="keypad-btn text-2xl p-6 bg-gray-200 hover:bg-gray-300 rounded-lg">9</button>
+        <button class="keypad-btn text-2xl p-6 bg-gray-200 hover:bg-gray-300 rounded-lg">4</button>
+        <button class="keypad-btn text-2xl p-6 bg-gray-200 hover:bg-gray-300 rounded-lg">5</button>
+        <button class="keypad-btn text-2xl p-6 bg-gray-200 hover:bg-gray-300 rounded-lg">6</button>
+        <button class="keypad-btn text-2xl p-6 bg-gray-200 hover:bg-gray-300 rounded-lg">1</button>
+        <button class="keypad-btn text-2xl p-6 bg-gray-200 hover:bg-gray-300 rounded-lg">2</button>
+        <button class="keypad-btn text-2xl p-6 bg-gray-200 hover:bg-gray-300 rounded-lg">3</button>
+        <button class="keypad-btn text-2xl p-6 bg-gray-200 hover:bg-gray-300 rounded-lg col-span-1">0</button>
+        <button id="backspace-keypad"
+                class="text-2xl p-6 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg">✕</button>
+        <button id="clear-keypad"
+                class="text-2xl p-6 bg-red-500 hover:bg-red-600 text-white rounded-lg">C</button>
+      </div>
+
+      <!-- 会計ボタン -->
+      <button id="calculate-change-button"
+              class="w-full max-w-xs mt-4 bg-green-500 text-white font-bold py-4 px-4 rounded-lg transition disabled:bg-gray-400"
+              disabled>
+        会計
+      </button>
+    </div>
+  </main>
+</div>
+
+<!-- === レジ2専用スクリプト === -->
+<script>
+window.addEventListener("screenChanged", (e) => {
+  if (e.detail !== "screen2") return;
+
+  const paymentDueEl = document.getElementById("payment-due");
+  const tenderedEl = document.getElementById("amount-tendered-display");
+  const changeEl = document.getElementById("change-due-display");
+  const backBtn = document.getElementById("back-to-screen1-button");
+  const calcBtn = document.getElementById("calculate-change-button");
+  const keypadBtns = document.querySelectorAll(".keypad-btn");
+  const clearBtn = document.getElementById("clear-keypad");
+  const backspaceBtn = document.getElementById("backspace-keypad");
+
+  let tendered = "";
+  let paymentDue = 0;
+  let transaction = null;
+
+  // === レジ1からデータ取得 ===
+  transaction = JSON.parse(localStorage.getItem("currentTransaction"));
+  if (transaction && transaction.total) {
+    paymentDue = transaction.total;
+    paymentDueEl.textContent = "¥" + paymentDue.toLocaleString();
+  }
+
+  // === お釣り計算 ===
+  function updateDisplay() {
+    const tenderedNum = tendered === "" ? 0 : parseInt(tendered, 10);
+    tenderedEl.textContent = "¥" + tenderedNum.toLocaleString();
+
+    const change = tenderedNum - paymentDue;
+    changeEl.textContent = change >= 0 ? "¥" + change.toLocaleString() : "¥0";
+
+    calcBtn.disabled = tenderedNum < paymentDue;
+  }
+
+  // === テンキー入力 ===
+  keypadBtns.forEach(btn => {
+    btn.onclick = () => {
+      tendered += btn.textContent;
+      updateDisplay();
+    };
+  });
+
+  // バックスペース
+  backspaceBtn.onclick = () => {
+    tendered = tendered.slice(0, -1);
+    updateDisplay();
+  };
+
+  // クリア
+  clearBtn.onclick = () => {
+    tendered = "";
+    updateDisplay();
+  };
+
+  // === 会計処理 ===
+  calcBtn.onclick = null;
+  calcBtn.onclick = () => {
+    const tenderedNum = tendered === "" ? 0 : parseInt(tendered, 10);
+    const change = Math.max(0, tenderedNum - paymentDue);
+
+    // レジ3用に上書き保存
+    localStorage.setItem("currentTransaction", JSON.stringify({
+      ...transaction,  // レジ1のデータ（cart など）を保持
+      total: paymentDue,
+      tendered: tenderedNum,
+      change: change,
+    }));
+
+    showScreen("screen3");
+  };
+
+  // 戻る
+  backBtn.onclick = () => {
+    showScreen("screen1");
+  };
+
+  updateDisplay();
+});
+</script>
+    
+    <!-- Screen 3: お会計完了画面 -->
+<div id="screen3" class="w-full hidden flex-grow flex flex-col">
+  <header class="bg-gray-800 text-white p-4 flex-shrink-0">
+    <h1 class="text-xl font-bold">レジ：お会計完了</h1>
+  </header>
+  <main class="flex-grow p-6 flex flex-col justify-center items-center">
+    <div class="w-full max-w-md">
+      <!-- 受付番号 -->
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold">受付番号</h2>
+        <p id="final-order-number" class="text-7xl font-bold text-red-500">0</p>
+      </div>
+
+      <!-- おつり合計 -->
+      <h2 class="text-2xl font-semibold mb-2">おつり合計</h2>
+      <p id="final-change-amount" class="text-5xl font-bold text-green-600 mb-4">¥0</p>
+
+      <!-- 内訳 -->
+      <h3 class="text-lg font-semibold mb-2 border-b pb-1">内訳</h3>
+      <div id="change-breakdown" class="space-y-1 text-lg"></div>
+
+      <!-- ご購入内容（スクロール可能） -->
+      <h3 class="text-lg font-semibold mt-4 mb-2 border-b pb-1">ご購入内容</h3>
+      <div id="final-order-summary"
+           class="allow-scroll space-y-1 text-left text-sm max-h-32 overflow-y-auto no-scrollbar bg-gray-50 p-3 rounded-lg">
+      </div>
+
+      <!-- 次の会計へ -->
+      <button id="new-transaction-button"
+              class="w-full max-w-xs mt-6 bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-4 rounded-lg transition">
+        次の会計へ
+      </button>
+    </div>
+  </main>
+</div>
+
+<!-- === レジ3専用スクリプト === -->
+<script>
+window.addEventListener("screenChanged", (e) => {
+  if (e.detail !== "screen3") return;
+
+  const orderNumberEl = document.getElementById("final-order-number");
+  const changeAmountEl = document.getElementById("final-change-amount");
+  const breakdownEl = document.getElementById("change-breakdown");
+  const orderSummaryEl = document.getElementById("final-order-summary");
+  const newTransactionBtn = document.getElementById("new-transaction-button");
+
+  // === 受付番号カウントアップ ===
+  let lastNumber = parseInt(localStorage.getItem("lastOrderNumber") || "0", 10);
+  if (isNaN(lastNumber)) lastNumber = 0;
+  lastNumber++;
+  localStorage.setItem("lastOrderNumber", lastNumber);
+  if (orderNumberEl) orderNumberEl.textContent = lastNumber;
+
+  // === レジ2からデータ取得 ===
+  const paymentData = JSON.parse(localStorage.getItem("currentTransaction") || "null");
+
+  if (paymentData) {
+    // 数値保証
+    const changeNum = Number(paymentData.change) || 0;
+    const totalNum = Number(paymentData.total) || 0;
+
+    // おつり合計
+    if (changeAmountEl) {
+      changeAmountEl.textContent = "¥" + changeNum.toLocaleString();
+    }
+
+    // 内訳
+    if (breakdownEl) {
+      breakdownEl.innerHTML = "";
+      if (changeNum > 0) {
+        let remain = changeNum;
+        const coins = [1000, 500, 100, 50, 10];
+        coins.forEach(c => {
+          const count = Math.floor(remain / c);
+          if (count > 0) {
+            const div = document.createElement("div");
+            div.textContent = `${c}円 × ${count}`;
+            breakdownEl.appendChild(div);
+            remain -= c * count;
+          }
+        });
+      } else {
+        breakdownEl.innerHTML = "<p class='text-gray-500'>おつりがありません</p>";
+      }
+    }
+
+    // ご購入内容（商品名:味 × 数量点 (無料券〇枚)）
+    if (orderSummaryEl) {
+      orderSummaryEl.innerHTML = "";
+      if (Array.isArray(paymentData.cart) && paymentData.cart.length > 0) {
+        paymentData.cart.forEach(item => {
+          const p = document.createElement("p");
+          const name = item.name || "商品";
+          const flavor = item.flavor ? `:${item.flavor}` : "";
+          const qty = item.quantity || 0;
+          const free = item.freeCount || 0;
+
+          p.textContent = `${name}${flavor} × ${qty}点 (無料券${free}枚)`;
+          orderSummaryEl.appendChild(p);
+        });
+      } else {
+        orderSummaryEl.innerHTML = "<p class='text-gray-500'>購入商品がありません。</p>";
+      }
+    }
+
+    // === 履歴に保存 ===
+    const history = JSON.parse(localStorage.getItem("transactionHistory") || "[]");
+    history.push({
+      orderNumber: lastNumber,
+      date: new Date().toISOString(),
+      cart: paymentData.cart || [],
+      total: totalNum,
+      tendered: paymentData.tendered || 0,
+      change: changeNum
+    });
+    localStorage.setItem("transactionHistory", JSON.stringify(history));
+  }
+
+  // === 新しい会計へ ===
+if (newTransactionBtn) {
+  newTransactionBtn.onclick = () => {
+    localStorage.removeItem("currentTransaction");
+    localStorage.setItem("cart", JSON.stringify([]));
+    showScreen("screen1");
+  };
+}
+});
+</script>
+    
+    <!-- Screen 4: 商品管理画面 -->
+<div id="screen4" class="w-full hidden flex-grow flex flex-col">
+  <header class="bg-gray-800 text-white p-4 flex justify-between items-center flex-shrink-0">
+    <h1 class="text-xl font-bold">レジ：商品管理</h1>
+    <button id="back-to-screen1-from-manager"
+            class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition">
+      戻る
+    </button>
+  </header>
+
+  <main class="flex-grow p-6 flex flex-col min-h-0">
+    <!-- 新しい商品を追加 -->
+    <div class="mb-6 p-4 bg-gray-100 rounded-lg flex-shrink-0">
+      <h2 class="text-lg font-bold mb-2 text-gray-800">新しい商品を追加</h2>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <input type="text" id="new-product-name" placeholder="商品名" class="flex-grow p-2 border rounded-lg">
+        <input type="text" id="new-product-flavor" placeholder="味 (任意)" class="flex-grow p-2 border rounded-lg">
+        <input type="number" id="new-product-price" placeholder="価格 (円)" class="w-full sm:w-32 p-2 border rounded-lg">
+        <button id="add-product-btn"
+                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition">
+          追加
+        </button>
+      </div>
+    </div>
+
+    <!-- 登録済み商品リスト -->
+<h2 class="text-lg font-bold mb-2 text-gray-800 flex-shrink-0">登録済み商品リスト</h2>
+
+<div id="product-management-list"
+     class="allow-scroll overflow-y-auto no-scrollbar bg-gray-50 p-3 rounded-lg shadow max-h-96"
+     style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
+  <p class="text-gray-500">商品が登録されていません。</p> 
+    </div>
+  </main>
+</div>
+  
+<!-- === レジ4専用スクリプト === -->
+<script>
+window.addEventListener("screenChanged", (e) => {
+  if (e.detail !== "screen4") return;
+
+  const listEl = document.getElementById("product-management-list");
+  const addBtn = document.getElementById("add-product-btn");
+
+  // デフォルト商品
+  const defaultProducts = [
+    { id: 1, name: "ポテト", flavor: "塩", price: 300 },
+    { id: 2, name: "ポテト", flavor: "コンソメ", price: 300 },
+    { id: 3, name: "ポテト", flavor: "バター醤油", price: 300 },
+    { id: 4, name: "たこ焼き", flavor: "ソース", price: 250 },
+    { id: 5, name: "たこ焼き", flavor: "しょうゆ", price: 250 },
+    { id: 6, name: "たこ焼き", flavor: "塩", price: 250 },
+    { id: 7, name: "ドリンク", flavor: "コーラ", price: 200 },
+    { id: 8, name: "ドリンク", flavor: "カルピス", price: 200 },
+    { id: 9, name: "ドリンク", flavor: "サイダー", price: 200 }
+  ];
+
+  // LocalStorage保存
+  function saveProducts(products) {
+    localStorage.setItem("products", JSON.stringify(products));
+    renderProducts();
+    window.dispatchEvent(new Event("productsUpdated")); // レジ1へ通知
+  }
+
+  // LocalStorage読み込み
+  function loadProducts() {
+    const stored = localStorage.getItem("products");
+    return stored ? JSON.parse(stored) : defaultProducts;
+  }
+
+  // カスタム確認（はい/いいえ）
+  function customConfirm(message, callback) {
+    const overlay = document.createElement("div");
+    overlay.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+
+    const card = document.createElement("div");
+    card.className = "bg-white p-6 rounded-lg shadow-lg max-w-sm w-full text-center";
+    card.innerHTML = `
+      <p class="mb-4 text-gray-800">${message}</p>
+      <div class="flex justify-center gap-4">
+        <button class="cancel bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded">いいえ</button>
+        <button class="ok bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">はい</button>
+      </div>
+    `;
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    card.querySelector(".cancel").onclick = () => {
+      document.body.removeChild(overlay);
+      callback(false);
+    };
+    card.querySelector(".ok").onclick = () => {
+      document.body.removeChild(overlay);
+      callback(true);
+    };
+  }
+
+  // カスタム入力
+  function customPrompt(label, initialValue, callback) {
+    const overlay = document.createElement("div");
+    overlay.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+
+    const card = document.createElement("div");
+    card.className = "bg-white p-6 rounded-lg shadow-lg max-w-sm w-full text-center";
+    card.innerHTML = `
+      <p class="mb-4 text-gray-800">${label}</p>
+      <input type="text" class="w-full p-2 border rounded mb-4" value="${initialValue || ""}">
+      <div class="flex justify-center gap-4">
+        <button class="cancel bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded">キャンセル</button>
+        <button class="ok bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">はい</button>
+      </div>
+    `;
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    const input = card.querySelector("input");
+
+    card.querySelector(".cancel").onclick = () => {
+      document.body.removeChild(overlay);
+      callback(null);
+    };
+    card.querySelector(".ok").onclick = () => {
+      const val = input.value.trim();
+      document.body.removeChild(overlay);
+      callback(val);
+    };
+  }
+
+  // 商品リストを表示
+  function renderProducts() {
+    listEl.innerHTML = "";
+    const products = loadProducts();
+
+    if (products.length === 0) {
+      listEl.innerHTML = `<p class="text-gray-500">商品が登録されていません。</p>`;
+      return;
+    }
+
+    products.forEach(p => {
+      const card = document.createElement("div");
+      card.className = "bg-white p-3 rounded-lg shadow flex flex-col";
+
+      card.innerHTML = `
+        <div class="font-semibold text-base">${p.name}</div>
+        <div class="flex justify-between items-center text-sm text-gray-600 mt-1">
+          <span>${p.flavor || ""}</span>
+          <div class="flex gap-2">
+            <button class="edit bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-2 rounded text-sm">編集</button>
+            <button class="delete bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm">削除</button>
+          </div>
+        </div>
+        <div class="text-gray-800 mt-1">¥${p.price.toLocaleString()}</div>
+      `;
+
+      // 編集
+      card.querySelector(".edit").onclick = () => {
+        customConfirm(`「${p.name}」を編集しますか？`, (ok) => {
+          if (!ok) return;
+
+          customPrompt("商品名を入力してください", p.name, (newName) => {
+            if (newName !== null) p.name = newName;
+            customPrompt("味を入力してください", p.flavor, (newFlavor) => {
+              if (newFlavor !== null) p.flavor = newFlavor;
+              customPrompt("価格を入力してください", p.price, (newPrice) => {
+                if (newPrice !== null && !isNaN(newPrice)) p.price = parseInt(newPrice, 10);
+                saveProducts(products);
+              });
+            });
+          });
+        });
+      };
+
+      // 削除
+      card.querySelector(".delete").onclick = () => {
+        customConfirm(`「${p.name}」を削除しますか？`, (ok) => {
+          if (!ok) return;
+          const updated = products.filter(prod => prod.id !== p.id);
+          saveProducts(updated);
+        });
+      };
+
+      listEl.appendChild(card);
+    });
+  }
+
+  // 商品追加処理
+  addBtn.onclick = () => {
+    const name = document.getElementById("new-product-name").value.trim();
+    const flavor = document.getElementById("new-product-flavor").value.trim();
+    const price = parseInt(document.getElementById("new-product-price").value.trim(), 10);
+
+    if (!name || isNaN(price)) {
+      alert("商品名と価格を入力してください");
+      return;
+    }
+
+    const products = loadProducts();
+    const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+
+    products.push({ id: newId, name, flavor, price });
+    saveProducts(products);
+
+    document.getElementById("new-product-name").value = "";
+    document.getElementById("new-product-flavor").value = "";
+    document.getElementById("new-product-price").value = "";
+  };
+
+  // 初期表示
+  renderProducts();
+
+  // 戻るボタン
+  document.getElementById("back-to-screen1-from-manager").onclick = () => {
+    showScreen("screen1");
+  };
+});
+</script>    
+    
+  <!-- Screen 5: 取引履歴画面 -->
+<div id="screen5" class="w-full hidden flex-grow flex flex-col">
+
+  <!-- ヘッダー -->
+  <header class="bg-gray-800 text-white p-4 flex justify-between items-center flex-shrink-0">
+    <h1 class="text-xl font-bold">レジ：取引履歴</h1>
+    <button id="back-to-screen1-from-history"
+            class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition">
+      戻る
+    </button>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="flex-grow p-6 flex flex-col bg-white">
+
+    <!-- 検索 & フィルター -->
+    <div class="flex gap-2 items-center mb-4">
+      <!-- ボタン1: 取引/商品 -->
+      <select id="filter-type" class="ios-select w-28">
+        <option value="transaction" selected>取引</option>
+        <option value="product">商品</option>
+      </select>
+
+      <!-- ボタン2: 日付フィルタ -->
+      <select id="filter-date" class="ios-select w-32">
+        <option value="all" selected>すべて</option>
+        <option value="today">今日のみ</option>
+        <option value="custom">日付指定</option>
+      </select>
+
+      <!-- カレンダー入力（「日付指定」を選んだ時だけ表示） -->
+      <input type="date" id="filter-date-input"
+       class="ios-select hidden w-40 h-10 px-3 text-sm rounded-lg border border-gray-300">
+      <!-- 検索欄 -->
+      <input type="search" id="history-search-input"
+             placeholder="受付番号で検索"
+             class="flex-grow p-2 border border-gray-300 rounded-lg">
+    </div>
+
+    <!-- 売上集計 -->
+    <div id="history-summary"
+         class="mb-4 p-4 bg-gray-100 rounded-lg text-gray-800 flex-shrink-0 relative">
+      <h3 class="text-lg font-semibold mb-2">売上集計</h3>
+      <div id="history-summary-content" class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+        <div>総売上: ¥0</div>
+        <div>取引件数: 0件</div>
+        <div class="text-red-600">割引合計: -¥0</div>
+        <div>クーポン使用数: 0枚</div>
+      </div>
+
+      <!-- サーバー送信ボタン -->
+      <button id="send-server-button"
+              class="absolute bottom-10 right-2 bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg transition text-sm">
+        サーバー送信
+      </button>
+
+      <!-- 履歴削除ボタン -->
+      <button id="clear-history-button"
+              class="absolute bottom-2 right-2 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg transition text-sm">
+        履歴を消去
+      </button>
+    </div>
+
+<!-- 取引履歴リスト（レジ4と同じスクロールエリア方式） -->
+<div id="history-list"
+     class="allow-scroll overflow-y-auto no-scrollbar bg-gray-50 p-3 rounded-lg shadow max-h-96"
+     style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
+  <p class="text-gray-500">履歴がありません。</p>
+    </div>
+  </main>
+</div>
+    
+    <!-- === レジ5専用スタイル === -->
+<style>
+.ios-select {
+  appearance: none;          /* 矢印を消す */
+  -webkit-appearance: none;  /* Safari用 */
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: #007aff; /* iOSっぽい青文字 */
+}
+.ios-select:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 2px rgba(0,122,255,0.2);
+}
+</style>
+    
+<!-- === レジ5専用スクリプト === -->
+<script>
+// === 共通関数 ===
+function loadHistory() {
+  const stored = localStorage.getItem("transactionHistory");
+  return stored ? JSON.parse(stored) : [];
+}
+
+function updateSummary(history) {
+  const totalSales = history.reduce((sum, h) => sum + (h.total || 0), 0);
+  const totalDiscount = history.reduce((sum, h) => {
+    return sum + h.cart.reduce((cSum, item) =>
+      cSum + ((item.freeCount || 0) * (item.price || 0)), 0);
+  }, 0);
+  const couponUsed = history.reduce((sum, h) =>
+    sum + h.cart.reduce((cSum, item) => cSum + (item.freeCount || 0), 0), 0);
+
+  const historySummaryEl = document.getElementById("history-summary-content");
+  historySummaryEl.innerHTML = `
+    <div>総売上: <span class="font-bold">¥${totalSales.toLocaleString()}</span></div>
+    <div>取引件数: <span class="font-bold">${history.length}件</span></div>
+    <div class="text-red-600">割引合計: <span class="font-bold">-¥${totalDiscount.toLocaleString()}</span></div>
+    <div>クーポン使用数: <span class="font-bold">${couponUsed}枚</span></div>
+  `;
+}
+
+function applyFilters(history) {
+  const searchInput = document.getElementById("history-search-input");
+  const filterDate = document.getElementById("filter-date");
+  const filterDateInput = document.getElementById("filter-date-input");
+
+  let filtered = [...history];
+
+  // 検索
+  const searchValue = searchInput.value.trim();
+  if (searchValue) {
+    filtered = filtered.filter(h => String(h.orderNumber).includes(searchValue));
+  }
+
+  // 日付フィルタ
+  if (filterDate.value === "today") {
+    const today = new Date().toISOString().split("T")[0];
+    filtered = filtered.filter(h => h.date && h.date.startsWith(today));
+  } else if (filterDate.value === "custom" && filterDateInput.value) {
+    const target = filterDateInput.value;
+    filtered = filtered.filter(h => h.date && h.date.startsWith(target));
+  }
+
+  return filtered;
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function renderHistory() {
+  const historyListEl = document.getElementById("history-list");
+  const filterType = document.getElementById("filter-type");
+
+  const fmt = (v) => `¥${Number(v || 0).toLocaleString()}`;
+
+  const history = loadHistory();
+  const filtered = applyFilters(history);
+
+  historyListEl.innerHTML = "";
+
+  if (filtered.length === 0) {
+    historyListEl.innerHTML = "<p class='text-gray-500'>履歴がありません。</p>";
+    updateSummary([]);
+    return;
+  }
+
+  updateSummary(filtered);
+
+  if (filterType.value === "transaction") {
+    // 取引モード
+    filtered.forEach(h => {
+      const orderNum = h.orderNumber ?? "-";
+      const totalNum = Number(h.total || 0);
+      const tenderedNum = Number(h.tendered || 0);
+      const changeNum = Number(h.change || 0);
+
+      const div = document.createElement("div");
+      div.className = "p-4 bg-white shadow rounded-lg border border-gray-200";
+
+      const itemsHtml = (h.cart || []).map(item => {
+        const nameLabel = `${item.name}${item.flavor ? ":" + item.flavor : ""} × ${item.quantity}個 (無料券${item.freeCount || 0}枚)`;
+        const subtotal = (item.price || 0) * (item.quantity || 0);
+        return `<div class="flex justify-between text-sm">
+                  <div>${escapeHtml(nameLabel)}</div>
+                  <div>${fmt(subtotal)}</div>
+                </div>`;
+      }).join("");
+
+      div.innerHTML = `
+        <div class="flex justify-between items-center">
+          <div class="font-bold text-blue-600">受付番号: ${escapeHtml(String(orderNum))}</div>
+          <div class="font-bold">合計: ${fmt(totalNum)}</div>
+        </div>
+        <hr class="my-1 border-gray-200">
+        <div class="text-sm text-gray-600">${h.date ? new Date(h.date).toLocaleString() : "-"}</div>
+        <div class="mt-2 space-y-1">${itemsHtml}</div>
+        <div class="flex justify-end mt-2 text-sm space-x-4">
+          <span>預り: ${fmt(tenderedNum)}</span>
+          <span>おつり: ${fmt(changeNum)}</span>
+        </div>
+      `;
+      historyListEl.appendChild(div);
+    });
+
+  } else {
+    // 商品モード
+    const productMap = {};
+    filtered.forEach(h => {
+      (h.cart || []).forEach(item => {
+        const key = item.name || "商品";
+        if (!productMap[key]) productMap[key] = { totalQty: 0, totalPrice: 0, details: [] };
+
+        const qty = Number(item.quantity || 0);
+        const price = Number(item.price || 0);
+        productMap[key].totalQty += qty;
+        productMap[key].totalPrice += price * qty;
+        productMap[key].details.push({
+          flavor: item.flavor || "",
+          qty,
+          subtotal: price * qty
+        });
+      });
+    });
+
+    Object.keys(productMap).forEach(name => {
+      const data = productMap[name];
+      const div = document.createElement("div");
+      div.className = "p-4 bg-white shadow rounded-lg border border-gray-200";
+
+      div.innerHTML = `
+        <div class="flex justify-between items-center">
+          <div class="font-bold text-blue-600">${escapeHtml(name)}</div>
+          <div class="font-bold">${data.totalQty}個 │ ${fmt(data.totalPrice)}</div>
+        </div>
+        <hr class="my-1 border-gray-200">
+        <div class="mt-1 space-y-1">
+          ${data.details.map(d =>
+            `<div class="flex justify-between text-sm">
+              <div>${escapeHtml(name + (d.flavor ? ":"+d.flavor : ""))} × ${d.qty}個</div>
+              <div>${fmt(d.subtotal)}</div>
+            </div>`).join("")}
+        </div>
+      `;
+      historyListEl.appendChild(div);
+    });
+  }
+}
+
+// === イベント登録（1回だけ実行） ===
+window.addEventListener("DOMContentLoaded", () => {
+  const searchInput = document.getElementById("history-search-input");
+  const clearBtn = document.getElementById("clear-history-button");
+  const backBtn = document.getElementById("back-to-screen1-from-history");
+  const filterType = document.getElementById("filter-type");
+  const filterDate = document.getElementById("filter-date");
+  const filterDateInput = document.getElementById("filter-date-input");
+  const sendServerBtn = document.getElementById("send-server-button");
+
+  searchInput.addEventListener("input", renderHistory);
+  clearBtn.addEventListener("click", () => {
+    if (confirm("履歴をすべて削除しますか？")) {
+      localStorage.removeItem("transactionHistory");
+      localStorage.setItem("lastOrderNumber", "0");
+      renderHistory();
+    }
+  });
+  backBtn.addEventListener("click", () => showScreen("screen1"));
+  filterType.addEventListener("change", renderHistory);
+  filterDate.addEventListener("change", () => {
+    filterDateInput.classList.toggle("hidden", filterDate.value !== "custom");
+    renderHistory();
+  });
+  filterDateInput.addEventListener("change", renderHistory);
+
+  sendServerBtn.onclick = async () => {
+    if (!navigator.onLine) {
+      alert("オフラインのためこの機能は使用できません。インターネットに接続してください。");
+      return;
+    }
+    if (!confirm("データをサーバーに送信しますか？")) return;
+
+    let deviceId = localStorage.getItem("deviceId");
+    if (!deviceId) {
+      deviceId = prompt("端末IDを入力してください。A〜Zのアルファベット1文字です", "");
+      if (!deviceId || !/^[A-Z]$/.test(deviceId)) {
+        alert("正しい端末IDを入力してください。");
+        return;
+      }
+      localStorage.setItem("deviceId", deviceId);
+    } else {
+      const change = confirm(`現在の端末IDは「${deviceId}」です。変更しますか？`);
+      if (change) {
+        const newId = prompt("新しい端末IDを入力してください。A〜Zのアルファベット1文字です", deviceId);
+        if (newId && /^[A-Z]$/.test(newId)) {
+          deviceId = newId;
+          localStorage.setItem("deviceId", deviceId);
+        }
+      }
+    }
+
+    try {
+      const history = JSON.parse(localStorage.getItem("transactionHistory") || "[]");
+      const payload = { deviceId, history };
+
+      await fetch("http://localhost:3000/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      alert("送信完了");
+    } catch (err) {
+      console.error(err);
+      alert("送信に失敗しました");
+    }
+  };
+});
+
+// === 画面切り替え時 ===
+window.addEventListener("screenChanged", (e) => {
+  if (e.detail !== "screen5") return;
+  renderHistory();
+});
+</script>    
+    <!-- 共通スクリプト -->
+  <script>
+    // 初期表示
+    document.addEventListener("DOMContentLoaded", () => {
+      showScreen("screen1");
+    });
+
+    // 画面切り替え関数
+    function showScreen(id) {
+  // 全ての screen を非表示にする
+  document.querySelectorAll("[id^='screen']").forEach(div => div.classList.add("hidden"));
+
+  // 指定された screen だけ表示
+  const el = document.getElementById(id);
+  if (el) el.classList.remove("hidden");
+
+  // 画面切替イベントを発火
+  window.dispatchEvent(new CustomEvent("screenChanged", { detail: id }));
+}
+
+    // ===== 全画面スクロール禁止 =====
+    document.body.addEventListener("touchmove", function(e) {
+      if (!e.target.closest(".allow-scroll")) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    // ===== ダブルタップ拡大禁止 =====
+    let lastTouchEnd = 0;
+    document.addEventListener("touchend", function (event) {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, { passive: false });
+  </script>
+</body>
+</html>
