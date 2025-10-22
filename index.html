@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジtest_v2.0.6</title>
+  <title>レジtest_v2.0.7</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -107,6 +107,9 @@
 
 <!-- === 選択状態のカスタムCSS === -->
 <style>
+  #product-list {
+  -webkit-overflow-scrolling: touch; /* iOSでスムーズスクロール */
+}
   .cart-item.selected {
     border: 2px solid #3b82f6;
     background-color: #ebf5ff;
