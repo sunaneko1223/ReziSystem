@@ -566,11 +566,12 @@ window.addEventListener("screenChanged", (e) => {
       <h3 class="text-lg font-semibold mb-2 border-b pb-1">内訳</h3>
       <div id="change-breakdown" class="space-y-1 text-lg"></div>
 
-      <!-- ご購入内容（スクロール可能） -->
-      <h3 class="text-lg font-semibold mt-4 mb-2 border-b pb-1">ご購入内容</h3>
-      <div id="final-order-summary"
-           class="allow-scroll space-y-1 text-left text-sm max-h-32 overflow-y-auto no-scrollbar bg-gray-50 p-3 rounded-lg">
-      </div>
+      <!-- 登録済み商品リスト（スクロール可能） -->
+<h2 class="text-lg font-bold mb-2 text-gray-800 flex-shrink-0">登録済み商品リスト</h2>
+<div id="product-management-list"
+     class="flex-grow no-scrollbar bg-gray-50 p-3 rounded-lg shadow allow-scroll">
+  <p class="text-gray-500">商品が登録されていません。</p>
+</div>
 
       <!-- 次の会計へ -->
       <button id="new-transaction-button"
