@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジTest_v2.3.0</title>
+  <title>レジTest_v2.3.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -18,7 +18,27 @@
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-  </style>
+  
+  /* iOSキーボードズレ対策 */
+  @supports (-webkit-touch-callout: none) {
+    input, select, textarea {
+      font-size: 16px !important; /* iOSのズーム防止 */
+    }
+
+    /* main内部のスクロール領域をiOS対応 */
+    .allow-scroll {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      flex-grow: 1;
+    }
+
+    /* フォーカス時にキーボードぶん縮む */
+    .allow-scroll:focus-within {
+      height: calc(100vh - 300px);
+    }
+  }
+</style>
 </head>
 <body class="h-full bg-gray-100">
 
