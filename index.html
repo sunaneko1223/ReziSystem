@@ -23,7 +23,7 @@
 <body class="h-full bg-gray-100">
 
   <!-- 全体コンテナ -->
-  <div class="w-full h-full max-w-4xl mx-auto bg-white shadow-2xl rounded-lg flex flex-col min-h-0">
+  <div class="w-full h-full max-w-4xl mx-auto bg-white shadow-2xl rounded-lg flex flex-col min-h-0 content-stretch">
 
     <!-- === レジ1: 商品選択画面 === -->
 <div id="screen1" class="w-full flex-grow flex flex-col min-h-0">
@@ -131,7 +131,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // === 商品データを取得 ===
   function loadProducts() {
-    localStorage.removeItem("products")
     const defaultProducts = [
  { id: 1, name: "わらび餅", flavor: "", price: 300 },
  { id: 2, name: "ベビーカステラ", flavor: "", price: 200 },
