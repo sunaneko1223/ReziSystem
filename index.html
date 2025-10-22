@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジTest_v2.2.2</title>
+  <title>レジTest_v2.2.3</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -1293,44 +1293,33 @@ window.addEventListener("screenChanged", (e) => {
   if (!(isIOS && isWebKit)) return;
 
   let scrollY = 0;
-  let lastVisualHeight = window.visualViewport?.height || window.innerHeight;
 
-  // focusin で入力開始時
-  window.addEventListener("focusin", (e) => {
-    const target = e.target;
-    if (!target.closest(".allow-scroll")) {
-      scrollY = window.scrollY;
-      document.body.style.position = "absolute";
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = "100%";
-      document.body.style.overflow = "visible";
-    }
+  window.addEventListener("focusin", () => {
+    scrollY = window.scrollY;
+    document.body.style.position = "absolute";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+    document.body.style.overflow = "visible";
   });
 
-  // focusout で入力終了時
-  window.addEventListener("focusout", (e) => {
-    const target = e.target;
-    if (!target.closest(".allow-scroll")) {
-      setTimeout(() => {
-        document.body.style.position = "fixed";
-        document.body.style.top = "0";
-        document.body.style.overflow = "hidden";
-        window.scrollTo(0, scrollY);
-      }, 250);
-    }
+  window.addEventListener("focusout", () => {
+    setTimeout(() => {
+      document.body.style.position = "fixed";
+      document.body.style.top = "0";
+      document.body.style.overflow = "hidden";
+      window.scrollTo(0, scrollY);
+    }, 300);
   });
 
-  // visualViewport で iPad Chrome 対策
   if (window.visualViewport) {
+    let lastHeight = window.visualViewport.height;
     window.visualViewport.addEventListener("resize", () => {
       const currentHeight = window.visualViewport.height;
-      if (currentHeight < lastVisualHeight - 100) {
-        // キーボード表示時
+      if (currentHeight < lastHeight - 100) {
         document.body.style.position = "absolute";
         document.body.style.top = `-${window.scrollY}px`;
         document.body.style.overflow = "visible";
-      } else if (currentHeight >= lastVisualHeight - 50) {
-        // キーボード閉じたとき
+      } else if (currentHeight >= lastHeight - 50) {
         setTimeout(() => {
           document.body.style.position = "fixed";
           document.body.style.top = "0";
@@ -1338,26 +1327,9 @@ window.addEventListener("screenChanged", (e) => {
           window.scrollTo(0, scrollY);
         }, 200);
       }
-      lastVisualHeight = currentHeight;
+      lastHeight = currentHeight;
     });
   }
-
-  // 全画面スクロール禁止（allow-scroll のみ許可）
-  document.body.addEventListener("touchmove", function(e) {
-    if (!e.target.closest(".allow-scroll")) {
-      e.preventDefault();
-    }
-  }, { passive: false });
-
-  // ダブルタップ拡大禁止
-  let lastTouchEnd = 0;
-  document.addEventListener("touchend", function (event) {
-    const now = Date.now();
-    if (now - lastTouchEnd <= 300) {
-      event.preventDefault();
-    }
-    lastTouchEnd = now;
-  }, { passive: false });
 })();
 </script>
 </body>
