@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジシステムv2.0.9</title>
+  <title>レジシステムv2.1.0</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -1285,13 +1285,15 @@ window.addEventListener("screenChanged", (e) => {
 
   <!-- ===== iOSキーボードずれ対策 ===== -->
 (function() {
-  const isIOS = /iP(ad|hone|od)/.test(navigator.userAgent);
-  if (!isIOS) return;
+  // iPad/iPhoneかつWebKitエンジンを使用しているブラウザ（Safari, Chrome, Edge, Braveなど）
+  const isIOSWebKit = /iP(ad|hone|od)/.test(navigator.userAgent) && /WebKit/.test(navigator.userAgent);
+
+  if (!isIOSWebKit) return;
 
   let scrollY = 0;
 
   window.addEventListener("focusin", () => {
-    // キーボード表示時に画面固定を一時解除
+    // キーボード表示時に固定解除（画面が押し上げられないようにする）
     scrollY = window.scrollY;
     document.body.style.position = "absolute";
     document.body.style.top = `-${scrollY}px`;
@@ -1300,13 +1302,13 @@ window.addEventListener("screenChanged", (e) => {
   });
 
   window.addEventListener("focusout", () => {
-    // キーボード閉じたら元の状態に戻す
+    // キーボード閉じたら元の固定状態に戻す
     setTimeout(() => {
       document.body.style.position = "fixed";
       document.body.style.top = "0";
       document.body.style.overflow = "hidden";
-      window.scrollTo(0, scrollY); // スクロール位置復元
-    }, 300); // Safariの描画遅延を吸収
+      window.scrollTo(0, scrollY);
+    }, 350); // Chromeの遅延描画にも対応
   });
 })();
 </script>
