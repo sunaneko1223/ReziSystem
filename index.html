@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジシステムtest_v2.0.5</title>
+  <title>レジシステムv2.0.6</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -23,7 +24,7 @@
 <body class="h-full bg-gray-100">
 
   <!-- 全体コンテナ -->
-  <div class="w-full h-full max-w-4xl mx-auto bg-white shadow-2xl rounded-lg flex flex-col min-h-0 content-stretch">
+  <div class="w-full h-full max-w-4xl mx-auto bg-white shadow-2xl rounded-lg flex flex-col min-h-0">
 
     <!-- === レジ1: 商品選択画面 === -->
 <div id="screen1" class="w-full flex-grow flex flex-col min-h-0">
@@ -46,16 +47,14 @@
   </header>
 
   <!-- ==== メインコンテンツ ==== -->
- <main class="flex-grow p-4 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0">
+  <main class="flex-grow p-4 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0 content-stretch">
 
-    <!-- 左：商品リスト -->
-<div class="md:col-span-2 flex flex-col min-h-0">
-  <div id="product-list"
-             class="flex-grow grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2 p-1
-                    bg-gray-50 rounded-lg overflow-auto no-scrollbar min-h-0">
-          <p class="text-gray-500">商品がまだありません。</p>
-  </div>
-</div>
+    <!-- === 左：商品リスト === -->
+    <div id="product-list"
+         class="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-0 p-1
+                bg-gray-50 rounded-lg overflow-auto no-scrollbar min-h-0">
+      <!-- 商品はスクリプトで生成 -->
+    </div>
 
     <!-- === 右：ご注文内容 === -->
     <div class="md:col-span-1 bg-gray-100 p-4 rounded-lg flex flex-col min-h-0">
@@ -131,6 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // === 商品データを取得 ===
   function loadProducts() {
+    localStorage.removeItem("products")
     const defaultProducts = [
  { id: 1, name: "わらび餅", flavor: "", price: 300 },
  { id: 2, name: "ベビーカステラ", flavor: "", price: 200 },
