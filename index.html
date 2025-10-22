@@ -680,8 +680,8 @@ if (newTransactionBtn) {
 });
 </script>
     
-   <!-- Screen 4: 商品管理画面（修正版） -->
-<div id="screen4" class="w-full hidden flex flex-col h-full">
+   <!-- Screen 4: 商品管理画面 -->
+<div id="screen4" class="w-full hidden flex-grow flex flex-col">
 
   <!-- ヘッダー -->
   <header class="bg-gray-800 text-white p-4 flex justify-between items-center flex-shrink-0">
@@ -692,9 +692,7 @@ if (newTransactionBtn) {
     </button>
   </header>
 
-  <!-- メインコンテンツ -->
-  <main class="flex-grow p-6 flex flex-col min-h-0 overflow-y-auto allow-scroll"
-        style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
+  <main class="flex-grow p-6 flex flex-col min-h-0">
 
     <!-- 新しい商品を追加 -->
     <div class="mb-6 p-4 bg-gray-100 rounded-lg flex-shrink-0">
@@ -710,15 +708,13 @@ if (newTransactionBtn) {
       </div>
     </div>
 
-    <!-- 登録済み商品リスト -->
-    <h2 class="text-lg font-bold mb-2 text-gray-800 flex-shrink-0">登録済み商品リスト</h2>
-
-    <div id="product-management-list"
-         class="bg-gray-50 p-3 rounded-lg shadow flex flex-col gap-2 flex-grow"
-         style="-webkit-overflow-scrolling: touch;">
-      <p class="text-gray-500">商品が登録されていません。</p> 
+    <!-- 登録済み商品リスト（スクロール可能） -->
+    <div class="flex-grow overflow-y-auto allow-scroll no-scrollbar"
+         style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
+      <div id="product-management-list" class="flex flex-col gap-2">
+        <p class="text-gray-500">商品が登録されていません。</p>
+      </div>
     </div>
-
   </main>
 </div>
   
