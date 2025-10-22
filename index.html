@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジTest v2.3.3</title>
+  <title>レジTest v2.3.4</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -903,7 +903,8 @@ window.addEventListener("screenChanged", (e) => {
 });
 </script>    
     
-  <div id="screen5" class="w-full h-screen hidden flex flex-col">
+  <!-- Screen 5: 取引履歴画面 -->
+<div id="screen5" class="w-full h-screen hidden flex flex-col">
 
   <!-- ヘッダー -->
   <header class="bg-gray-800 text-white p-4 flex justify-between items-center flex-shrink-0">
@@ -915,10 +916,10 @@ window.addEventListener("screenChanged", (e) => {
   </header>
 
   <!-- メインコンテンツ -->
-  <main class="flex flex-col flex-grow overflow-hidden p-6 bg-white">
+  <main class="flex-grow flex flex-col p-6 bg-white overflow-hidden">
 
     <!-- 検索 & フィルター -->
-    <div class="flex gap-2 items-center mb-4">
+    <div class="flex gap-2 items-center mb-4 flex-shrink-0">
       <select id="filter-type" class="ios-select w-28">
         <option value="transaction" selected>取引</option>
         <option value="product">商品</option>
@@ -931,7 +932,7 @@ window.addEventListener("screenChanged", (e) => {
       </select>
 
       <input type="date" id="filter-date-input"
-             class="ios-select hidden w-40 h-10 px-3 text-sm rounded-lg border border-gray-300">
+       class="ios-select hidden w-40 h-10 px-3 text-sm rounded-lg border border-gray-300">
 
       <input type="search" id="history-search-input"
              placeholder="受付番号で検索"
@@ -962,8 +963,8 @@ window.addEventListener("screenChanged", (e) => {
 
     <!-- 取引履歴リスト -->
     <div id="history-list"
-         class="flex-grow overflow-y-auto no-scrollbar bg-gray-50 p-3 rounded-lg shadow"
-         style="min-height: 0; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
+         class="flex-grow overflow-y-auto min-h-0 allow-scroll no-scrollbar bg-gray-50 p-3 rounded-lg shadow"
+         style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
       <p class="text-gray-500">履歴がありません。</p>
     </div>
   </main>
