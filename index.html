@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジTest_v2.2.5</title>
+  <title>レジTest_v2.2.6</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -695,7 +695,7 @@ if (newTransactionBtn) {
   <!-- メインコンテンツ -->
   <main class="flex-grow p-6 flex flex-col min-h-0">
 
-    <!-- 新しい商品を追加 -->
+    <!-- 新しい商品を追加（固定） -->
     <div class="mb-6 p-4 bg-gray-100 rounded-lg flex-shrink-0">
       <h2 class="text-lg font-bold mb-2 text-gray-800">新しい商品を追加</h2>
       <div class="flex flex-col sm:flex-row gap-2">
@@ -709,7 +709,7 @@ if (newTransactionBtn) {
       </div>
     </div>
 
-    <!-- 登録済み商品リスト（スクロール対応） -->
+    <!-- 登録済み商品リスト（スクロール可能） -->
     <h2 class="text-lg font-bold mb-2 text-gray-800 flex-shrink-0">登録済み商品リスト</h2>
     <div id="product-management-list"
          class="flex-grow overflow-y-auto no-scrollbar bg-gray-50 p-3 rounded-lg shadow allow-scroll"
@@ -718,6 +718,7 @@ if (newTransactionBtn) {
     </div>
   </main>
 </div>
+
     
 <!-- === レジ4専用スクリプト === -->
 <script>
