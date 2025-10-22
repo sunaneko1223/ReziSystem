@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジtest_v2.0.7</title>
+  <title>レジtest_v2.0.8</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -44,18 +44,16 @@
   </header>
 
   <!-- ==== メインコンテンツ ==== -->
-  <main class="flex-grow p-4 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0">
+  <main class="flex-grow p-4 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0 content-stretch">
 
-   <!-- === 左：商品リスト === -->
-<div id="product-list"
-     class="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-0 p-1
-            bg-gray-50 rounded-lg overflow-auto no-scrollbar min-h-0">
-  <!-- 商品はスクリプトで生成 -->
-</div>
-
-
-
-
+  <!-- === 左：商品リスト === -->
+  <div id="product-list"
+       class="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-0 p-1
+              bg-gray-50 rounded-lg overflow-auto flex-grow min-h-0"
+       style="-webkit-overflow-scrolling: touch;">
+    <!-- 商品はスクリプトで生成 -->
+  </div>
+    
     <!-- === 右：ご注文内容 === -->
     <div class="md:col-span-1 bg-gray-100 p-4 rounded-lg flex flex-col min-h-0">
 
@@ -107,9 +105,6 @@
 
 <!-- === 選択状態のカスタムCSS === -->
 <style>
-  #product-list {
-  -webkit-overflow-scrolling: touch; /* iOSでスムーズスクロール */
-}
   .cart-item.selected {
     border: 2px solid #3b82f6;
     background-color: #ebf5ff;
