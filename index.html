@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジtest_v2.0.9</title>
+  <title>レジtest_v2.1.0</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -26,7 +26,7 @@
   <div class="w-full h-full max-w-4xl mx-auto bg-white shadow-2xl rounded-lg flex flex-col min-h-0">
 
     <!-- === レジ1: 商品選択画面 === -->
-<div id="screen1" class="w-full flex-grow flex flex-col min-h-0">
+<div id="screen1" class="w-full flex flex-col h-screen">
 
   <!-- ==== ヘッダー ==== -->
   <header class="bg-gray-800 text-white p-4 flex justify-between items-center flex-shrink-0">
@@ -44,28 +44,29 @@
   </header>
 
   <!-- ==== メインコンテンツ ==== -->
-  <main class="flex-grow p-4 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0 content-stretch">
+  <main class="flex-grow p-4 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0">
 
-  <!-- 左：商品リスト -->
-<div id="product-list"
-     class="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-0 p-1
-            bg-gray-50 rounded-lg overflow-auto min-h-0 no-scrollbar"
-     style="flex-grow:1; -webkit-overflow-scrolling: touch;">
-  <!-- 商品はスクリプトで生成 -->
-</div>
+    <!-- === 左：商品リスト === -->
+    <div id="product-list"
+         class="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-0 p-1
+                bg-gray-50 rounded-lg overflow-y-auto no-scrollbar -webkit-overflow-scrolling-touch">
+      <!-- 商品はスクリプトで生成 -->
+    </div>
 
-    
     <!-- === 右：ご注文内容 === -->
     <div class="md:col-span-1 bg-gray-100 p-4 rounded-lg flex flex-col min-h-0">
 
+      <!-- 見出し -->
       <h2 class="text-lg font-bold border-b pb-2 mb-4 flex-shrink-0">ご注文内容</h2>
 
+      <!-- ご注文リスト（スクロール可） -->
       <div id="cart-items"
            class="flex-grow overflow-y-auto no-scrollbar space-y-2 min-h-0 allow-scroll"
            style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
         <p class="text-gray-500">商品が選択されていません。</p>
       </div>
 
+      <!-- 下部操作パネル（固定） -->
       <div class="mt-3 flex-shrink-0">
         <div class="space-y-2">
           <div class="flex items-center justify-between w-full bg-orange-500 text-white font-bold py-1 rounded-lg">
@@ -103,14 +104,13 @@
   </main>
 </div>
 
-
-<!-- === 選択状態のカスタムCSS === -->
 <style>
   .cart-item.selected {
     border: 2px solid #3b82f6;
     background-color: #ebf5ff;
   }
 </style>
+
 
 <!-- === レジ1専用スクリプト === -->
 <script>
@@ -534,7 +534,7 @@ window.addEventListener("screenChanged", (e) => {
       <h3 class="text-lg font-semibold mb-2 border-b pb-1">内訳</h3>
       <div id="change-breakdown" class="space-y-1 text-lg"></div>
 
-      <!-- ご購入内容（スクロール可能） -->
+      <!-- ご購入内容 -->
       <h3 class="text-lg font-semibold mt-4 mb-2 border-b pb-1">ご購入内容</h3>
       <div id="final-order-summary"
            class="allow-scroll space-y-1 text-left text-sm max-h-32 overflow-y-auto no-scrollbar bg-gray-50 p-3 rounded-lg">
