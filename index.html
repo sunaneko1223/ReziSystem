@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジシステムv2.0.8</title>
+  <title>レジシステムv2.0.9</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -1283,28 +1283,32 @@ window.addEventListener("screenChanged", (e) => {
     lastTouchEnd = now;
   }, { passive: false });
 
-  // ===== iOSキーボード対策 =====
-  (function() {
-    const isIOS = /iP(ad|hone|od)/.test(navigator.userAgent);
-    if (!isIOS) return;
+  <!-- ===== iOSキーボードずれ対策 ===== -->
+(function() {
+  const isIOS = /iP(ad|hone|od)/.test(navigator.userAgent);
+  if (!isIOS) return;
 
-    let originalPosition = document.body.style.position;
+  let scrollY = 0;
 
-    window.addEventListener("focusin", () => {
-      // 入力フォーカス時 → 固定を一時解除してズレ防止
-      document.body.style.position = "static";
-      document.body.style.overflow = "visible";
-    });
+  window.addEventListener("focusin", () => {
+    // キーボード表示時に画面固定を一時解除
+    scrollY = window.scrollY;
+    document.body.style.position = "absolute";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+    document.body.style.overflow = "visible";
+  });
 
-    window.addEventListener("focusout", () => {
-      // フォーカス解除時 → 固定レイアウトを戻す
-      setTimeout(() => {
-        document.body.style.position = originalPosition || "fixed";
-        document.body.style.overflow = "hidden";
-        window.scrollTo(0, 0); // 画面位置をリセット
-      }, 200); // Safari描画遅延吸収
-    });
-  })();
+  window.addEventListener("focusout", () => {
+    // キーボード閉じたら元の状態に戻す
+    setTimeout(() => {
+      document.body.style.position = "fixed";
+      document.body.style.top = "0";
+      document.body.style.overflow = "hidden";
+      window.scrollTo(0, scrollY); // スクロール位置復元
+    }, 300); // Safariの描画遅延を吸収
+  });
+})();
 </script>
 </body>
 </html>
