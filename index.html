@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジTesst_v2.1.0</title>
+  <title>レジTesst_v2.1.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -1284,15 +1284,16 @@ window.addEventListener("screenChanged", (e) => {
 
   <!-- ===== iOSキーボードずれ対策 ===== -->
 (function() {
-  // iPad/iPhoneかつWebKitエンジンを使用しているブラウザ（Safari, Chrome, Edge, Braveなど）
-  const isIOSWebKit = /iP(ad|hone|od)/.test(navigator.userAgent) && /WebKit/.test(navigator.userAgent);
-
-  if (!isIOSWebKit) return;
+  const ua = navigator.userAgent;
+  const isIOS = /iP(ad|hone|od)/.test(ua);
+  const isWebKit = /WebKit/.test(ua);
+  if (!(isIOS && isWebKit)) return;
 
   let scrollY = 0;
+  let lastVisualHeight = window.visualViewport?.height || 0;
 
+  // focusin/outでposition制御
   window.addEventListener("focusin", () => {
-    // キーボード表示時に固定解除（画面が押し上げられないようにする）
     scrollY = window.scrollY;
     document.body.style.position = "absolute";
     document.body.style.top = `-${scrollY}px`;
@@ -1301,14 +1302,35 @@ window.addEventListener("screenChanged", (e) => {
   });
 
   window.addEventListener("focusout", () => {
-    // キーボード閉じたら元の固定状態に戻す
     setTimeout(() => {
       document.body.style.position = "fixed";
       document.body.style.top = "0";
       document.body.style.overflow = "hidden";
       window.scrollTo(0, scrollY);
-    }, 350); // Chromeの遅延描画にも対応
+    }, 300);
   });
+
+  // 🧩 Chrome(iPad)対策: visualViewport 変化を監視
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", () => {
+      const currentHeight = window.visualViewport.height;
+      // キーボード出現で高さが縮んだ場合のみ対応
+      if (currentHeight < lastVisualHeight - 100) {
+        document.body.style.position = "absolute";
+        document.body.style.top = `-${window.scrollY}px`;
+        document.body.style.overflow = "visible";
+      } else if (currentHeight >= lastVisualHeight - 50) {
+        // キーボード閉じたとき
+        setTimeout(() => {
+          document.body.style.position = "fixed";
+          document.body.style.top = "0";
+          document.body.style.overflow = "hidden";
+          window.scrollTo(0, scrollY);
+        }, 200);
+      }
+      lastVisualHeight = currentHeight;
+    });
+  }
 })();
 </script>
 </body>
