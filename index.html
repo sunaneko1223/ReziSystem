@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジTest_v2.1.1</title>
+  <title>レジTest_v2.1.2</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -1283,55 +1283,27 @@ window.addEventListener("screenChanged", (e) => {
   }, { passive: false });
 
   <!-- ===== iOSキーボードずれ対策 ===== -->
-(function() {
+window.addEventListener("screenChanged", (e) => {
+  const id = e.detail;
+
+  // === iOS / iPad Chrome 対策 ===
   const ua = navigator.userAgent;
   const isIOS = /iP(ad|hone|od)/.test(ua);
   const isWebKit = /WebKit/.test(ua);
-  if (!(isIOS && isWebKit)) return;
+  const isIOSWebKit = isIOS && isWebKit;
 
-  let scrollY = 0;
-  let lastVisualHeight = window.visualViewport?.height || 0;
+  if (!isIOSWebKit) return;
 
-  // focusin/outでposition制御
-  window.addEventListener("focusin", () => {
-    scrollY = window.scrollY;
+  if (id === "screen4") {
+    // 商品管理画面ではスクロールを許可（キーボードずれ防止）
     document.body.style.position = "absolute";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = "100%";
-    document.body.style.overflow = "visible";
-  });
-
-  window.addEventListener("focusout", () => {
-    setTimeout(() => {
-      document.body.style.position = "fixed";
-      document.body.style.top = "0";
-      document.body.style.overflow = "hidden";
-      window.scrollTo(0, scrollY);
-    }, 300);
-  });
-
-  // 🧩 Chrome(iPad)対策: visualViewport 変化を監視
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", () => {
-      const currentHeight = window.visualViewport.height;
-      // キーボード出現で高さが縮んだ場合のみ対応
-      if (currentHeight < lastVisualHeight - 100) {
-        document.body.style.position = "absolute";
-        document.body.style.top = `-${window.scrollY}px`;
-        document.body.style.overflow = "visible";
-      } else if (currentHeight >= lastVisualHeight - 50) {
-        // キーボード閉じたとき
-        setTimeout(() => {
-          document.body.style.position = "fixed";
-          document.body.style.top = "0";
-          document.body.style.overflow = "hidden";
-          window.scrollTo(0, scrollY);
-        }, 200);
-      }
-      lastVisualHeight = currentHeight;
-    });
+    document.body.style.overflow = "auto";
+  } else {
+    // 他画面では従来通り固定
+    document.body.style.position = "fixed";
+    document.body.style.overflow = "hidden";
   }
-})();
+});
 </script>
 </body>
 </html>
