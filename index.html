@@ -723,7 +723,23 @@ if (newTransactionBtn) {
     </div>
   </main>
 </div>
-  
+
+<style>
+  html, body {
+    height: 100%;
+    width: 100%;
+    position: relative;
+    overflow: auto;
+  }
+
+  /* iOS Safari で dvh をサポートしてない場合のフォールバック */
+  @supports not (height: 100dvh) {
+    #screen4 {
+      min-height: 100vh;
+    }
+  }
+</style>
+    
 <!-- === レジ4専用スクリプト === -->
 <script>
 window.addEventListener("screenChanged", (e) => {
