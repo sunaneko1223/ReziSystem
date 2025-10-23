@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジTest v2.4.0</title>
+  <title>レジTest v2.4.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -685,10 +685,10 @@ if (newTransactionBtn) {
 });
 </script>
     
-    <!-- === レジ4: 商品管理画面 === -->
-<div id="screen4" class="w-full hidden flex-grow flex flex-col min-h-0">
+    <!-- Screen 4: 商品管理画面 -->
+<div id="screen4" class="w-full hidden flex flex-col h-full">
 
-  <!-- ==== ヘッダー ==== -->
+  <!-- ヘッダー固定 -->
   <header class="bg-gray-800 text-white p-4 flex justify-between items-center flex-shrink-0">
     <h1 class="text-xl font-bold">レジ：商品管理</h1>
     <button id="back-to-screen1-from-manager"
@@ -697,55 +697,64 @@ if (newTransactionBtn) {
     </button>
   </header>
 
-  <!-- ==== メインコンテンツ ==== -->
-  <main class="flex-grow flex flex-col p-6 bg-white min-h-0">
+  <!-- メイン -->
+  <main class="flex-grow flex flex-col p-6 bg-white overflow-hidden">
 
-    <!-- ボタン：フォームを開く -->
-    <button id="open-add-modal"
-            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg w-full sm:w-auto mb-4 transition">
-      新しい商品を追加
-    </button>
+    <!-- 新しい商品を追加 -->
+    <div class="mb-6 p-4 bg-gray-100 rounded-lg flex-shrink-0">
+      <h2 class="text-lg font-bold mb-2 text-gray-800">新しい商品を追加</h2>
+      <div class="flex flex-col sm:flex-row gap-2 items-center">
+        <input type="text" id="new-product-name"
+               placeholder="商品名"
+               class="flex-grow p-2 border border-gray-300 rounded-lg">
+
+        <input type="text" id="new-product-flavor"
+               placeholder="味 (任意)"
+               class="flex-grow p-2 border border-gray-300 rounded-lg">
+
+        <input type="number" id="new-product-price"
+               placeholder="価格 (円)"
+               class="w-full sm:w-32 p-2 border border-gray-300 rounded-lg">
+
+        <button id="add-product-btn"
+                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition">
+          追加
+        </button>
+      </div>
+    </div>
 
     <!-- 登録済み商品リスト -->
     <h2 class="text-lg font-bold mb-2 text-gray-800 flex-shrink-0">登録済み商品リスト</h2>
     <div id="product-management-list"
-         class="flex-grow overflow-y-auto allow-scroll no-scrollbar bg-gray-50 p-3 rounded-lg shadow min-h-0"
-         style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
+         class="flex-grow overflow-y-auto allow-scroll no-scrollbar bg-gray-50 p-3 rounded-lg shadow"
+         style="max-height: 100%; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
       <p class="text-gray-500">商品が登録されていません。</p>
     </div>
   </main>
 </div>
+    
+    <style>
+/* iOSキーボード対策 */
+input[type="text"],
+input[type="number"] {
+  -webkit-appearance: none;
+  appearance: none;
+  font-size: 16px;
+}
+</style> 
 
-<!-- === 商品追加モーダル === -->
-<div id="add-product-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start z-50 pt-20">
-  <div class="bg-white w-full max-w-md mx-4 p-6 rounded-lg shadow-lg relative">
-    <h2 class="text-lg font-bold mb-3 text-gray-800">新しい商品を追加</h2>
-    <div class="flex flex-col sm:flex-row gap-2 mb-4">
-      <input type="text" id="new-product-name" placeholder="商品名" class="flex-grow p-2 border rounded-lg">
-      <input type="text" id="new-product-flavor" placeholder="味 (任意)" class="flex-grow p-2 border rounded-lg">
-      <input type="number" id="new-product-price" placeholder="価格 (円)" class="w-full sm:w-32 p-2 border rounded-lg">
-    </div>
-    <div class="flex justify-end gap-2">
-      <button id="close-add-modal"
-              class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition">キャンセル</button>
-      <button id="add-product-btn"
-              class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition">追加</button>
-    </div>
-  </div>
-</div>
-
-<!-- === レジ4専用スクリプト === -->
+<!-- レジ4専用スクリプト -->
 <script>
 window.addEventListener("screenChanged", (e) => {
   if (e.detail !== "screen4") return;
 
-  const listEl = document.getElementById("product-management-list");
+  const nameInput = document.getElementById("new-product-name");
+  const flavorInput = document.getElementById("new-product-flavor");
+  const priceInput = document.getElementById("new-product-price");
   const addBtn = document.getElementById("add-product-btn");
-  const openModal = document.getElementById("open-add-modal");
-  const closeModal = document.getElementById("close-add-modal");
-  const modal = document.getElementById("add-product-modal");
+  const listEl = document.getElementById("product-management-list");
 
-  // デフォルト商品
+  // ✅ デフォルト商品リスト
   const defaultProducts = [
     { id: 1, name: "わらび餅", flavor: "", price: 300 },
     { id: 2, name: "ベビーカステラ", flavor: "", price: 200 },
@@ -765,105 +774,77 @@ window.addEventListener("screenChanged", (e) => {
     { id: 16, name: "ポーチ", flavor: "", price: 300 },
   ];
 
-  // LocalStorage操作
-  const saveProducts = (products) => {
+  // ✅ LocalStorage読み込みまたは初期化
+  let products = JSON.parse(localStorage.getItem("products"));
+  if (!products || products.length === 0) {
+    products = defaultProducts;
     localStorage.setItem("products", JSON.stringify(products));
-    renderProducts();
-    window.dispatchEvent(new Event("productsUpdated"));
-  };
+  }
 
-  const loadProducts = () => {
-    const stored = localStorage.getItem("products");
-    return stored ? JSON.parse(stored) : defaultProducts;
-  };
+  renderProductList();
 
-  // 商品リスト描画
-  function renderProducts() {
-    const products = loadProducts();
-    listEl.innerHTML = "";
+  // 商品追加
+  addBtn.addEventListener("click", () => {
+    const name = nameInput.value.trim();
+    const flavor = flavorInput.value.trim();
+    const price = parseInt(priceInput.value.trim(), 10);
 
-    if (products.length === 0) {
-      listEl.innerHTML = `<p class="text-gray-500">商品が登録されていません。</p>`;
+    if (!name || isNaN(price)) {
+      alert("商品名と価格を入力してください。");
       return;
     }
 
-    products.forEach(p => {
-      const card = document.createElement("div");
-      card.className = "bg-white p-3 rounded-lg shadow flex flex-col";
-      card.innerHTML = `
-        <div class="font-semibold text-base">${p.name}</div>
-        <div class="flex justify-between items-center text-sm text-gray-600 mt-1">
-          <span>${p.flavor || ""}</span>
-          <div class="flex gap-2">
-            <button class="edit bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-2 rounded text-sm">編集</button>
-            <button class="delete bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm">削除</button>
-          </div>
+    const newProduct = { id: Date.now(), name, flavor, price };
+    products.push(newProduct);
+    localStorage.setItem("products", JSON.stringify(products));
+    renderProductList();
+
+    // 入力リセット
+    nameInput.value = "";
+    flavorInput.value = "";
+    priceInput.value = "";
+  });
+
+  // 商品リスト描画
+  function renderProductList() {
+    if (products.length === 0) {
+      listEl.innerHTML = '<p class="text-gray-500">商品が登録されていません。</p>';
+      return;
+    }
+
+    listEl.innerHTML = "";
+    products.forEach((p) => {
+      const item = document.createElement("div");
+      item.className = "flex justify-between items-center bg-white rounded-lg p-3 mb-2 border";
+      item.innerHTML = `
+        <div>
+          <p class="font-semibold">${p.name}</p>
+          ${p.flavor ? `<p class="text-sm text-gray-500">${p.flavor}</p>` : ""}
+          <p class="text-sm text-gray-700">¥${p.price.toLocaleString()}</p>
         </div>
-        <div class="text-gray-800 mt-1">¥${p.price.toLocaleString()}</div>
+        <button class="delete-product bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg text-sm">
+          削除
+        </button>
       `;
+      listEl.appendChild(item);
 
-      // 編集
-      card.querySelector(".edit").onclick = () => {
-        const newName = prompt("商品名:", p.name);
-        if (newName === null) return;
-        const newFlavor = prompt("味:", p.flavor);
-        if (newFlavor === null) return;
-        const newPrice = parseInt(prompt("価格:", p.price), 10);
-        if (!isNaN(newPrice)) {
-          p.name = newName;
-          p.flavor = newFlavor;
-          p.price = newPrice;
-          saveProducts(products);
+      item.querySelector(".delete-product").addEventListener("click", () => {
+        if (confirm("この商品を削除しますか？")) {
+          products = products.filter(x => x.id !== p.id);
+          localStorage.setItem("products", JSON.stringify(products));
+          renderProductList();
         }
-      };
-
-      // 削除
-      card.querySelector(".delete").onclick = () => {
-        if (confirm(`「${p.name}」を削除しますか？`)) {
-          saveProducts(products.filter(prod => prod.id !== p.id));
-        }
-      };
-
-      listEl.appendChild(card);
+      });
     });
   }
 
-  // === モーダル制御 ===
-  openModal.onclick = () => {
-    modal.classList.remove("hidden");
+  // 「戻る」ボタン
+  document.getElementById("back-to-screen1-from-manager").onclick = () => {
+    const event = new CustomEvent("screenChanged", { detail: "screen1" });
+    window.dispatchEvent(event);
   };
-  closeModal.onclick = () => {
-    modal.classList.add("hidden");
-  };
-
-  // === 商品追加 ===
-  addBtn.onclick = () => {
-    const name = document.getElementById("new-product-name").value.trim();
-    const flavor = document.getElementById("new-product-flavor").value.trim();
-    const price = parseInt(document.getElementById("new-product-price").value.trim(), 10);
-
-    if (!name || isNaN(price)) {
-      alert("商品名と価格を入力してください");
-      return;
-    }
-
-    const products = loadProducts();
-    const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
-    products.push({ id: newId, name, flavor, price });
-    saveProducts(products);
-
-    // フォームリセット & モーダル閉じる
-    document.getElementById("new-product-name").value = "";
-    document.getElementById("new-product-flavor").value = "";
-    document.getElementById("new-product-price").value = "";
-    modal.classList.add("hidden");
-  };
-
-  renderProducts();
-
-  document.getElementById("back-to-screen1-from-manager").onclick = () => showScreen("screen1");
 });
-</script>   
+</script>
     
    <!-- === レジ5: 取引履歴画面 === -->
 <div id="screen5" class="w-full hidden flex-grow flex flex-col min-h-0">
