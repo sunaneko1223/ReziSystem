@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>レジTest v2.3.7</title>
+  <title>レジTest v2.3.6</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
       height: 100%;
       width: 100%;
+      position: fixed;
       overflow: hidden;
     }
     body {
@@ -681,11 +682,11 @@ if (newTransactionBtn) {
     <!-- Screen 4: 商品管理画面 -->
 <div id="screen4" class="w-full hidden flex flex-col h-full">
 
-  <!-- ヘッダー -->
+  <!-- ヘッダー固定 -->
   <header class="bg-gray-800 text-white p-4 flex justify-between items-center flex-shrink-0">
     <h1 class="text-xl font-bold">レジ：商品管理</h1>
-    <button id="back-to-screen1-from-products"
-            class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition">
+    <button id="back-to-screen1-from-manager"
+            class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition">
       戻る
     </button>
   </header>
@@ -693,38 +694,26 @@ if (newTransactionBtn) {
   <!-- メイン -->
   <main class="flex-grow flex flex-col p-6 bg-white overflow-hidden">
 
-    <!-- 商品追加フォーム -->
-    <div id="product-add-form" class="mb-4 bg-gray-50 p-4 rounded-lg shadow flex flex-col gap-2">
-      <h2 class="text-lg font-semibold mb-1">新しい商品を追加</h2>
-
-      <div class="flex flex-col md:flex-row gap-2">
-        <input id="new-product-name"
-               type="text"
-               placeholder="商品名"
-               class="flex-grow border border-gray-300 rounded-lg p-2 text-sm">
-
-        <input id="new-product-flavor"
-               type="text"
-               placeholder="味（任意）"
-               class="flex-grow border border-gray-300 rounded-lg p-2 text-sm">
-
-        <input id="new-product-price"
-               type="number"
-               placeholder="価格"
-               class="w-32 border border-gray-300 rounded-lg p-2 text-sm">
-
-        <button id="add-product-button"
-                class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition">
+    <!-- 新しい商品を追加 -->
+    <div class="mb-6 p-4 bg-gray-100 rounded-lg flex-shrink-0">
+      <h2 class="text-lg font-bold mb-2 text-gray-800">新しい商品を追加</h2>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <input type="text" id="new-product-name" placeholder="商品名" class="flex-grow p-2 border rounded-lg">
+        <input type="text" id="new-product-flavor" placeholder="味 (任意)" class="flex-grow p-2 border rounded-lg">
+        <input type="number" id="new-product-price" placeholder="価格 (円)" class="w-full sm:w-32 p-2 border rounded-lg">
+        <button id="add-product-btn"
+                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition">
           追加
         </button>
       </div>
     </div>
 
     <!-- 登録済み商品リスト -->
-    <div class="flex-grow bg-gray-50 p-4 rounded-lg shadow overflow-y-auto no-scrollbar"
-         id="product-management-list"
+    <h2 class="text-lg font-bold mb-2 text-gray-800 flex-shrink-0">登録済み商品リスト</h2>
+    <div id="product-management-list"
+         class="flex-grow overflow-y-auto no-scrollbar bg-gray-50 p-3 rounded-lg shadow"
          style="max-height: 100%; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
-      <p class="text-gray-500">登録済みの商品はありません。</p>
+      <p class="text-gray-500">商品が登録されていません。</p>
     </div>
   </main>
 </div>
