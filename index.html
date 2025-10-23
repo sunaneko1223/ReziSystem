@@ -723,22 +723,6 @@ if (newTransactionBtn) {
     </div>
   </main>
 </div>
-
-<style>
-  html, body {
-    height: 100%;
-    width: 100%;
-    position: relative;
-    overflow: auto;
-  }
-
-  /* iOS Safari で dvh をサポートしてない場合のフォールバック */
-  @supports not (height: 100dvh) {
-    #screen4 {
-      min-height: 100vh;
-    }
-  }
-</style>
     
 <!-- === レジ4専用スクリプト === -->
 <script>
@@ -926,6 +910,25 @@ window.addEventListener("screenChanged", (e) => {
     showScreen("screen1");
   };
 });
+  // 仮想キーボード修正
+  function setScreenHeight() {
+  const screen = document.getElementById("screen4");
+  // innerHeight を直接使ってキーボード表示時でも画面高さに合わせる
+  screen.style.height = window.innerHeight + "px";
+}
+
+// 初期ロード
+setScreenHeight();
+
+// 画面リサイズ時
+window.addEventListener("resize", setScreenHeight);
+
+// フォーカス時に再計算（iOS Safari キーボード対応）
+document.querySelectorAll("input, textarea").forEach(el => {
+  el.addEventListener("focus", setScreenHeight);
+  el.addEventListener("blur", setScreenHeight);
+});
+
 </script>    
     
    <!-- === レジ5: 取引履歴画面 === -->
